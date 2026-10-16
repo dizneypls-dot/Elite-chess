@@ -33,7 +33,7 @@ $('scr-setup').innerHTML = `
   <aside class="panel">
     <div class="row"><h2 class="grow">Play</h2><span class="rating-chip" id="setupRating"></span></div>
     <div class="tabs" id="modeTabs" role="group" aria-label="Opponent">
-      <button type="button" data-v="cpu">Bots</button><button type="button" data-v="pvp">Friend</button><button type="button" data-v="cvc">Bot vs bot</button>
+      <button type="button" data-v="cpu">Bots</button><button type="button" data-v="pvp">Friend</button><button type="button" data-v="online">Online</button><button type="button" data-v="cvc">Bot vs bot</button>
     </div>
     <div id="cpuSetup" class="stack">
       <div class="bot-hero" id="botHero"></div>
@@ -45,6 +45,12 @@ $('scr-setup').innerHTML = `
       <div class="label">Black</div><div class="bot-grid" id="cvcB"></div>
     </div>
     <div id="pvpSetup" class="muted">Two players share this screen and take turns. Flip the board whenever you like.</div>
+    <div id="onlineSetup" class="stack">
+      <div class="muted">Play a friend on their own phone (Android app or iPhone). One of you taps Create game and reads out the code; the other types it and taps Join. Both phones need internet.</div>
+      <button class="btn violet" id="olHost" type="button">Create game</button>
+      <div class="row"><input id="olCode" class="ol-code grow" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="Code" aria-label="Game code"><button class="btn" id="olJoin" type="button">Join</button></div>
+      <div class="ol-status" id="olStatus" role="status"></div>
+    </div>
     <div class="engine-note" id="engineNote" hidden></div>
     <div id="sideField">
       <div class="label" style="margin-bottom:8px">I play as</div>
@@ -71,7 +77,9 @@ function renderSetup(){
   $('cpuSetup').hidden = setup.mode !== 'cpu';
   $('cvcSetup').hidden = setup.mode !== 'cvc';
   $('pvpSetup').hidden = setup.mode !== 'pvp';
-  $('sideField').hidden = setup.mode !== 'cpu';
+  $('onlineSetup').hidden = setup.mode !== 'online';
+  $('sideField').hidden = setup.mode !== 'cpu' && setup.mode !== 'online';
+  $('playBtn').hidden = setup.mode === 'online';
   $('ratedRow').hidden = setup.mode !== 'cpu';
   $('ratedBtn').setAttribute('aria-pressed', String(setup.rated));
   const bot = D.BOTS[setup.bot];
@@ -89,6 +97,7 @@ function renderSetup(){
   let top, bottom, flip = false;
   if (setup.mode === 'cpu'){ top = bot; bottom = GW.me(); flip = setup.side === 'b'; }
   else if (setup.mode === 'cvc'){ top = D.BOTS[setup.cvcB]; bottom = D.BOTS[setup.cvcW]; }
+  else if (setup.mode === 'online'){ top = {name:'Friend', look:D.PEOPLE.black.look}; bottom = GW.me(); flip = setup.side === 'b'; }
   else { top = D.PEOPLE.black; bottom = D.PEOPLE.white; }
   $('setupTop').innerHTML = barHTML(top, 'b');
   $('setupBot').innerHTML = barHTML(bottom, 'w');
@@ -154,6 +163,7 @@ function parseTc(v){
 function playerOf(cfg, c){
   if (cfg.bots[c] != null) return D.BOTS[cfg.bots[c]];
   if (cfg.mode === 'cpu') return GW.me();
+  if (cfg.mode === 'online') return c === cfg.human ? GW.me() : {name:Net.oppName, look:Net.oppLook || D.PEOPLE[c === 'w' ? 'white' : 'black'].look, elo:Net.oppElo};
   return c === 'w' ? D.PEOPLE.white : D.PEOPLE.black;
 }
 
@@ -231,8 +241,11 @@ function flagFall(c){
 setInterval(() => {
   if (!clockRunning()) return;
   const c = cur().turn, left = clockLeft(c);
-  if (left <= 0) return flagFall(c);
-  const human = G.mode === 'pvp' || (G.mode === 'cpu' && c === G.human);
+  if (left <= 0){
+    if (G.mode === 'online'){ if (c !== G.human) return paintClocks(); netSend({t:'flag'}); }
+    return flagFall(c);
+  }
+  const human = G.mode === 'pvp' || ((G.mode === 'cpu' || G.mode === 'online') && c === G.human);
   if (human && left < 10000 && !G.warned[c]){ G.warned[c] = true; sfx.lowTime(); }
   paintClocks();
 }, 100);
@@ -250,14 +263,18 @@ const REACT = {
 };
 const pick = a => a[GW.rnd(a.length)];
 
-function doMove(m, dragged){
+// remoteLeft: in online games, the mover's clock after the move as reported by their phone
+function doMove(m, dragged, remoteLeft){
   if (!G || G.over) return;
   const s = cur();
   const t = Object.assign({}, G.times[G.times.length - 1]);
   if (G.tcObj && G.hist.length){
-    const left = clockLeft(s.turn);
-    if (left <= 0){ flagFall(s.turn); return; }
-    t[s.turn] = left + G.tcObj.inc;
+    if (remoteLeft != null) t[s.turn] = remoteLeft;
+    else {
+      const left = clockLeft(s.turn);
+      if (left <= 0){ flagFall(s.turn); return; }
+      t[s.turn] = left + G.tcObj.inc;
+    }
   }
   const text = san(s, m);
   const n = apply(s, m);
@@ -271,8 +288,9 @@ function doMove(m, dragged){
     else if (botMoved && m.cap && C.VAL[m.cap[1]] >= 300 && Math.random() < 0.6) G.chat = pick(REACT.grab);
     else if (!botMoved && m.cap && C.VAL[m.cap[1]] >= 300 && Math.random() < 0.6) G.chat = pick(REACT.ouch);
   }
+  if (G.mode === 'online' && s.turn === G.human) netSend({t:'move', u:uci(m), n:G.hist.length - 1, left:t[s.turn]});
   renderGame();
-  const self = G.mode === 'pvp' || (G.mode === 'cpu' && s.turn === G.human);
+  const self = G.mode === 'pvp' || ((G.mode === 'cpu' || G.mode === 'online') && s.turn === G.human);
   sfx.forMove(moveKind(m, n), self);
   maybeCpu();
 }
@@ -320,7 +338,8 @@ async function hint(){
 }
 
 const cpuToMove = () => G && !G.over && !ui.paused && G.bots[cur().turn] != null;
-const humanCanMove = () => G && !ui.thinking && !G.over && !ui.paused && G.bots[cur().turn] == null && GW.currentScreen() === 'game';
+const humanCanMove = () => G && !ui.thinking && !G.over && !ui.paused && G.bots[cur().turn] == null && GW.currentScreen() === 'game'
+  && (G.mode !== 'online' || cur().turn === G.human);
 
 async function maybeCpu(){
   if (!cpuToMove()) return;
@@ -401,6 +420,9 @@ function renderGame(){
     head.innerHTML = `<div class="av">${avatarSVG(b)}</div><div class="grow"><div style="font-weight:800">${b.name} <span class="muted" style="font-weight:600">${b.elo}</span> ${cupTag}</div><div class="bubble" style="margin-top:4px">${esc(G.chat || b.greet)}</div></div>`;
   } else if (G.mode === 'cvc'){
     head.innerHTML = `<div class="av">${avatarSVG(D.BOTS[G.bots.w])}</div><div class="grow" style="font-weight:800">${D.BOTS[G.bots.w].name} vs ${D.BOTS[G.bots.b].name}<div class="muted" style="font-weight:600;font-size:13px">Bot vs bot · ${tcLabel(G.tc)}</div></div><div class="av">${avatarSVG(D.BOTS[G.bots.b])}</div>`;
+  } else if (G.mode === 'online'){
+    const o = playerOf(G, opp(G.human));
+    head.innerHTML = `<div class="av">${avatarSVG(o)}</div><div class="grow" style="font-weight:800">${esc(o.name)}<div class="muted" style="font-weight:600;font-size:13px">Online · You play ${NAME[G.human]} · ${tcLabel(G.tc)}</div></div>`;
   } else {
     head.innerHTML = `<div class="av">${avatarSVG(D.PEOPLE.white)}</div><div class="grow" style="font-weight:800">Friend game<div class="muted" style="font-weight:600;font-size:13px">Same screen · ${tcLabel(G.tc)}</div></div><div class="av">${avatarSVG(D.PEOPLE.black)}</div>`;
   }
@@ -411,6 +433,10 @@ function renderGame(){
     title = s.turn === G.human ? (st.check ? 'You are in check' : 'Your move') : `${D.BOTS[G.bots[s.turn]].name} is thinking`;
     sub = `Move ${s.full} · ${G.rated ? (isRated() ? 'Rated' : 'Unrated (hint or takeback used)') : 'Casual'} · ${tcLabel(G.tc)}`;
   } else if (G.mode === 'cvc'){ title = `${D.BOTS[G.bots[s.turn]].name} to move`; sub = `Move ${s.full} · ${NAME[s.turn]} to play`; }
+  else if (G.mode === 'online'){
+    if (G.netLost){ title = 'Connection lost'; sub = `${Net.oppName} left the game`; }
+    else { title = s.turn === G.human ? (st.check ? 'You are in check' : 'Your move') : `${Net.oppName} to move`; sub = `Move ${s.full} · ${tcLabel(G.tc)}`; }
+  }
   else { title = st.check ? `${NAME[s.turn]} is in check` : `${NAME[s.turn]} to move`; sub = `Move ${s.full}`; }
   if (G.tcObj && !G.hist.length && !st.over) sub += ' · Clocks start after the first move';
   $('status').textContent = title;
@@ -431,8 +457,8 @@ function renderGame(){
     list.scrollTop = list.scrollHeight;
   }
   const human = G.mode !== 'cvc';
-  $('hintBtn').hidden = !human || st.over || !!G.cup;
-  $('undoBtn').hidden = !human || st.over || !!G.cup;
+  $('hintBtn').hidden = !human || st.over || !!G.cup || G.mode === 'online';
+  $('undoBtn').hidden = !human || st.over || !!G.cup || G.mode === 'online';
   $('pauseBtn').hidden = G.mode !== 'cvc';
   $('undoBtn').disabled = !G.hist.length || (G.mode === 'cpu' && !G.hist.some((h, k) => G.states[k].turn === G.human));
   $('hintBtn').disabled = !humanCanMove();
@@ -469,7 +495,7 @@ function finishGame(st){
 function showResult(st){
   if (!G || !G.over) return;
   let title = st.title;
-  if (G.mode === 'cpu') title = st.winner === G.human ? 'You won!' : st.winner ? 'You lost' : 'Draw';
+  if (G.mode === 'cpu' || G.mode === 'online') title = st.winner === G.human ? 'You won!' : st.winner ? 'You lost' : 'Draw';
   else if (G.mode === 'cvc' && st.winner) title = `${D.BOTS[G.bots[st.winner]].name} won`;
   const who = c => `<div class="who${st.winner === c ? ' win' : ''}"><div class="av">${avatarSVG(playerOf(G, c))}</div>${esc(playerOf(G, c).name)}</div>`;
   const o = G.outcome || {};
@@ -482,7 +508,7 @@ function showResult(st){
       <div class="row">${nextBtn}<button class="btn grow" id="resNew" type="button">New game</button></div>
       <button class="btn ghost" id="resClose" type="button">View board</button></div>`);
   m.querySelector('#resReview')?.addEventListener('click', () => { GW.closeModal(); startReview(G); });
-  m.querySelector('#resRematch')?.addEventListener('click', () => startGame({mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated}));
+  m.querySelector('#resRematch')?.addEventListener('click', () => G.mode === 'online' ? netRematch() : startGame({mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated}));
   m.querySelector('#resNext')?.addEventListener('click', () => { GW.closeModal(); playCupMatch(G.cup.id); });
   m.querySelector('#resNew').addEventListener('click', () => { GW.closeModal(); GW.show(G.cup ? 'cups' : 'setup'); });
   m.querySelector('#resClose').addEventListener('click', () => GW.closeModal());
@@ -500,7 +526,8 @@ $('resignBtn').addEventListener('click', () => {
   m.querySelector('#rsYes').addEventListener('click', () => {
     GW.closeModal();
     if (!G || G.over) return;
-    G.resigned = G.mode === 'cpu' ? G.human : cur().turn;
+    G.resigned = G.mode === 'cpu' || G.mode === 'online' ? G.human : cur().turn;
+    if (G.mode === 'online') netSend({t:'resign'});
     thinkToken++; ui.thinking = false;
     renderGame();
   });
@@ -508,6 +535,113 @@ $('resignBtn').addEventListener('click', () => {
 $('newBtn').addEventListener('click', () => GW.show(G && G.cup ? 'cups' : 'setup'));
 $('reviewNowBtn').addEventListener('click', () => startReview(G));
 GW.register('game', {onShow: () => { if (G){ syncBoard(null); renderGame(); maybeCpu(); } }});
+
+/* ============================== ONLINE (two phones over PeerJS / WebRTC) ============================== */
+// The host's phone registers "greenwood-chess-<code>" with the PeerJS broker; the guest connects to it and
+// from then on moves travel directly between the phones. The host picks colours and the time control.
+const Net = {peer:null, conn:null, host:false, code:'', oppName:'Friend', oppLook:null, oppElo:null};
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const peerId = code => 'greenwood-chess-' + code;
+// The opponent's avatar comes off the network: keep only colour codes, short words and flags
+const safeLook = look => {
+  if (!look || typeof look !== 'object') return null;
+  const out = {};
+  for (const [k, v] of Object.entries(look)){
+    if (!/^[a-z]{1,12}$/i.test(k)) continue;
+    if (typeof v === 'boolean' || (typeof v === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,16})$/i.test(v))) out[k] = v;
+  }
+  return out;
+};
+function netStatus(html, warn){ const el = $('olStatus'); if (el){ el.innerHTML = html; el.classList.toggle('warn', !!warn); } }
+function netSend(msg){ if (Net.conn && Net.conn.open) try { Net.conn.send(msg); } catch (_) {} }
+function netClose(){
+  const {conn, peer} = Net;
+  Net.conn = Net.peer = null;
+  try { conn && conn.close(); } catch (_) {}
+  try { peer && peer.destroy(); } catch (_) {}
+}
+const netErr = e => /network|server-error|socket-error|socket-closed/.test(e.type) ? 'Could not reach the game server. Check your internet connection.' : 'Connection problem (' + esc(e.type || 'unknown') + ').';
+const noPeer = () => typeof Peer === 'undefined' && (netStatus('Online play could not load. Check your internet connection and reopen the app.', true), true);
+
+function netHost(){
+  if (noPeer()) return;
+  netClose();
+  Net.host = true;
+  Net.code = Array.from({length:5}, () => CODE_CHARS[GW.rnd(CODE_CHARS.length)]).join('');
+  netStatus('Setting up…');
+  const peer = Net.peer = new Peer(peerId(Net.code));
+  peer.on('open', () => netStatus(`Your game code<div class="ol-big">${Net.code}</div>Waiting for your friend to join…`));
+  peer.on('connection', c => { if (Net.conn) { c.close(); return; } netWire(c); });
+  peer.on('error', e => { if (peer !== Net.peer) return; if (e.type === 'unavailable-id') netHost(); else if (!Net.conn) netStatus(netErr(e), true); });
+}
+function netJoin(){
+  const code = $('olCode').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length < 4) return netStatus('Type the code shown on your friend’s screen.', true);
+  if (noPeer()) return;
+  netClose();
+  Net.host = false;
+  Net.code = code;
+  netStatus('Connecting…');
+  const peer = Net.peer = new Peer();
+  peer.on('open', () => netWire(peer.connect(peerId(code), {reliable:true})));
+  peer.on('error', e => { if (peer !== Net.peer) return; if (!Net.conn || !Net.conn.open) netStatus(e.type === 'peer-unavailable' ? `No game found with code ${esc(code)}. Check it and try again.` : netErr(e), true); });
+}
+function netWire(c){
+  Net.conn = c;
+  c.on('open', () => {
+    const me = GW.me();
+    netSend({t:'hello', name:me.name, look:me.look, elo:me.elo});
+    if (Net.host) netStart(setup.side === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : setup.side);
+    else netStatus('Connected. Waiting for your friend to start…');
+  });
+  c.on('data', onNet);
+  c.on('close', () => netLost(c));
+  c.on('error', () => netLost(c));
+}
+function netStart(hostColor){
+  netSend({t:'start', side:opp(hostColor), tc:setup.tc});
+  startGame({mode:'online', human:hostColor, bots:{w:null, b:null}, tc:setup.tc, rated:false});
+}
+function netRematch(){
+  if (!Net.conn || !Net.conn.open) return GW.toast('Your friend is no longer connected.');
+  if (Net.host) netStart(opp(G.human));
+  else { netSend({t:'rematch'}); GW.toast('Rematch request sent.'); }
+}
+function netLost(c){
+  if (c !== Net.conn) return;
+  Net.conn = null;
+  netStatus('Your friend disconnected.', true);
+  if (G && G.mode === 'online' && !G.over){ G.netLost = true; renderGame(); }
+  GW.toast(`${esc(Net.oppName)} disconnected.`);
+}
+function onNet(msg){
+  if (!msg || typeof msg !== 'object') return;
+  const online = G && G.mode === 'online';
+  if (msg.t === 'hello'){
+    Net.oppName = String(msg.name || 'Friend').slice(0, 24);
+    Net.oppLook = safeLook(msg.look);
+    Net.oppElo = Number.isFinite(msg.elo) ? Math.round(msg.elo) : null;
+    if (online) renderGame();
+  } else if (msg.t === 'start' && !Net.host && (msg.side === 'w' || msg.side === 'b')){
+    startGame({mode:'online', human:msg.side, bots:{w:null, b:null}, tc:D.TIME_CONTROLS.some(t => t.id === msg.tc) ? msg.tc : '0', rated:false});
+  } else if (msg.t === 'move' && online && !G.over && msg.n === G.hist.length && cur().turn !== G.human){
+    const m = fromUci(cur(), String(msg.u));
+    if (m) doMove(m, false, G.tcObj && Number.isFinite(msg.left) ? msg.left : null);
+  } else if (msg.t === 'resign' && online && !G.over){
+    G.resigned = opp(G.human); renderGame();
+  } else if (msg.t === 'flag' && online && !G.over){
+    flagFall(opp(G.human));
+  } else if (msg.t === 'rematch' && Net.host && online && G.over){
+    netStart(opp(G.human));
+  } else if (msg.t === 'bye'){
+    netLost(Net.conn);
+  }
+}
+// Closing the app or tab tells the other phone straight away (a dropped connection can take a while to notice)
+addEventListener('pagehide', () => netSend({t:'bye'}));
+$('olHost').addEventListener('click', netHost);
+$('olJoin').addEventListener('click', netJoin);
+$('olCode').addEventListener('keydown', e => { if (e.key === 'Enter') netJoin(); });
 
 /* ============================== GAME REVIEW ============================== */
 $('scr-review').innerHTML = `
@@ -560,7 +694,7 @@ GW.fmtEval = fmtEval; GW.whiteCp = whiteCp; GW.winPct = winPct;
 
 function startReview(game){
   const tok = ++reviewToken;
-  const human = game.mode === 'cpu' ? game.human : null;
+  const human = game.mode === 'cpu' || game.mode === 'online' ? game.human : null;
   R = {token:tok, states:game.states.slice(), hist:game.hist.slice(), N:game.hist.length, ev:[], best:[], cls:[], loss:[], sb:[], sp:[], s2:[], bestPv:[],
        players:{w:playerOf(game, 'w'), b:playerOf(game, 'b')}, human, flipped: human === 'b', ply:0, done:false, engine:null, retry:null};
   reviewBoard.flipped = R.flipped;
@@ -744,24 +878,24 @@ function renderReview(){
   const txt = v === undefined ? '' : fmtEval(v).replace('+', '');
   bar.querySelector('.num.top').textContent = (R.flipped ? v >= 0 : v < 0) ? txt : '';
   bar.querySelector('.num.bot').textContent = (R.flipped ? v < 0 : v >= 0) ? txt : '';
-  bar.querySelector('.num.top').style.color = R.flipped ? '#2b2950' : '#f4f4fb';
-  bar.querySelector('.num.bot').style.color = R.flipped ? '#f4f4fb' : '#2b2950';
+  bar.querySelector('.num.top').style.color = R.flipped ? '#2a2f2d' : '#f3f3f0';
+  bar.querySelector('.num.bot').style.color = R.flipped ? '#f3f3f0' : '#2a2f2d';
   const ct = coachText();
   $('rvCoach').hidden = !ct;
   if (ct) $('rvCoach').innerHTML = `<div class="av">${avatarSVG(D.PEOPLE.coach)}</div><div class="grow"><h3>${ct.kind ? GW.clsIcon(ct.kind) : ''}${esc(ct.title)}${ct.ev !== undefined ? `<span class="ev">${fmtEval(ct.ev)}</span>` : ''}</h3><p>${esc(ct.text)}</p></div>`;
-  let g = '<rect width="400" height="96" fill="#2b2950"/>';
+  let g = '<rect width="400" height="96" fill="#2a2f2d"/>';
   if (have > 0){
     const x = i => N ? i / N * 400 : 0, y = i => 96 - winPct(Math.max(-1500, Math.min(1500, R.ev[i]))) * 0.96;
     let d = `M0,96 L0,${y(0).toFixed(1)}`;
     for (let i = 1; i < have; i++) d += ` L${x(i).toFixed(1)},${y(i).toFixed(1)}`;
     d += ` L${x(have - 1).toFixed(1)},96 Z`;
-    g += `<path d="${d}" fill="#f4f4fb"/><line x1="0" y1="48" x2="400" y2="48" stroke="#8a8aa8" stroke-opacity=".5" stroke-dasharray="3 3"/>`;
+    g += `<path d="${d}" fill="#f3f3f0"/><line x1="0" y1="48" x2="400" y2="48" stroke="#8a8aa8" stroke-opacity=".5" stroke-dasharray="3 3"/>`;
     for (let i = 0; i < R.N; i++){
       const kd = R.cls[i];
       if (['great', 'mistake', 'miss', 'blunder'].includes(kd)) g += `<circle cx="${x(i + 1).toFixed(1)}" cy="${y(i + 1).toFixed(1)}" r="4" fill="${GW.CLS[kd].color}" stroke="#fff" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
     }
   }
-  if (N) g += `<line x1="${(R.ply / N * 400).toFixed(1)}" y1="0" x2="${(R.ply / N * 400).toFixed(1)}" y2="96" stroke="#ffb627" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+  if (N) g += `<line x1="${(R.ply / N * 400).toFixed(1)}" y1="0" x2="${(R.ply / N * 400).toFixed(1)}" y2="96" stroke="#d3a24a" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
   $('rvGraph').innerHTML = g;
   $('rvAcc').innerHTML = ['w', 'b'].map(c => { const a = accuracy(c); return `<div class="card"><div class="av">${avatarSVG(R.players[c])}</div><div><small>${esc(R.players[c].name)}</small><div class="num">${R.done ? (a != null ? a.toFixed(1) : '–') : '…'}</div><small>${R.done && a != null && canEstimate(c) ? `Accuracy · ~${perfEstimate(a)}` : 'Accuracy'}</small></div></div>`; }).join('');
   // key moments
@@ -988,7 +1122,7 @@ GW.register('cups', {onShow: renderCups});
 
 /* ---------- Keep a game in progress across live page updates ---------- */
 GW.snapshotGame = () => {
-  if (!G || G.over) return null;
+  if (!G || G.over || G.mode === 'online') return null;
   const times = G.times.map(t => Object.assign({}, t));
   if (clockRunning()) times[times.length - 1][cur().turn] = clockLeft(cur().turn);
   return {mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated, cup:G.cup || null, moves:G.hist.map(h => uci(h.m)), times, flipped:ui.flipped};

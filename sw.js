@@ -1,7 +1,7 @@
 // Offline cache for the installed (Add to Home Screen) web app. Bump VERSION when files change.
-const VERSION = 'gw-v2';
+const VERSION = 'gw-v4';
 const FILES = ['./', 'index.html', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png',
-  'chess.js', 'data.js', 'puzzles.js', 'openings.js', 'lessons.js', 'core.js', 'play.js', 'learn.js',
+  'chess.js', 'data.js', 'puzzles.js', 'openings.js', 'lessons.js', 'core.js', 'peerjs.min.js', 'play.js', 'learn.js',
   'stockfish.wasm.js', 'stockfish.wasm', 'stockfish.js'];
 self.addEventListener('install', e => e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(

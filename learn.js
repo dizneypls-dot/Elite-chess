@@ -15,6 +15,17 @@ GW.copyText = async (text, msg) => {
 const feedback = (el, kind, html) => { el.hidden = !kind; if (kind){ el.className = 'feedback ' + kind; el.innerHTML = html; } };
 const OK = html => `<span class="ic">✓</span><div>${html}</div>`;
 const BAD = html => `<span class="ic">✕</span><div>${html}</div>`;
+const LI = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const TILE_ICON = {
+  bolt: LI('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'),
+  book: LI('<path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/>'),
+  star: LI('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'),
+  tree: LI('<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6h7M6 8.5V15a3 3 0 0 0 3 3h6.5"/>'),
+  scope: LI('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/>'),
+  medal: LI('<circle cx="12" cy="15" r="6"/><path d="M8.5 10.2L6 3h4l2 5 2-5h4l-2.5 7.2M12 12.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z"/>'),
+  puzzle: LI('<path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z"/>'),
+  cap: LI('<path d="M2 9l10-5 10 5-10 5zM6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5M22 9v6"/>')
+};
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 const lessonCount = () => Object.entries(profile.lessons).filter(([id, n]) => { const L = findLesson(id); return L && n >= L.lesson.steps.length; }).length;
 function findLesson(id){ for (const c of LRN.COURSES){ const l = c.lessons.find(x => x.id === id); if (l) return {course:c, lesson:l}; } return null; }
@@ -24,8 +35,8 @@ function ratingChart(w = 320, h = 90){
   const lo = Math.min(...pts) - 20, hi = Math.max(...pts) + 20;
   const x = i => i / (pts.length - 1) * (w - 8) + 4, y = v => h - 6 - (v - lo) / (hi - lo) * (h - 12);
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8b7cff" stop-opacity=".45"/><stop offset="1" stop-color="#8b7cff" stop-opacity="0"/></linearGradient></defs>` +
-    `<path d="${d} L${x(pts.length - 1).toFixed(1)},${h} L${x(0).toFixed(1)},${h} Z" fill="url(#cg)"/><path d="${d}" fill="none" stroke="#8b7cff" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg>`;
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>` +
+    `<path d="${d} L${x(pts.length - 1).toFixed(1)},${h} L${x(0).toFixed(1)},${h} Z" fill="url(#cg)"/><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
 }
 const dailyPuzzle = () => {
   const day = Math.floor(Date.now() / 86400000), pool = GW.BANK.filter(p => p.rating >= 1200 && p.rating <= 1900);
@@ -44,19 +55,19 @@ function renderHome(){
   <div class="home">
     <section class="hero">
       <div class="hero-me"><div class="av big">${avatarSVG(GW.me())}</div><div><div class="muted">${greeting()},</div><h1>${esc(profile.name || 'Player')}</h1>
-        <div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating ${delta ? `<i class="${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲' : '▼'} ${Math.abs(delta)}</i>` : ''}</span><span class="pill">${profile.wins}W · ${profile.draws}D · ${profile.losses}L</span><span class="pill">🧩 ${profile.puzzleRating}</span></div></div></div>
+        <div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating ${delta ? `<i class="${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲' : '▼'} ${Math.abs(delta)}</i>` : ''}</span><span class="pill">${profile.wins}W · ${profile.draws}D · ${profile.losses}L</span><span class="pill">${TILE_ICON.puzzle} ${profile.puzzleRating} puzzles</span></div></div></div>
       <div class="hero-chart">${ratingChart(360, 96)}</div>
       <div class="hero-cta">${active ? '<button class="btn pop big" id="hmContinue" type="button">Continue game</button>' : ''}<button class="btn ${active ? 'violet' : 'pop'} big" id="hmPlay" type="button">Play a bot</button></div>
     </section>
     <section class="tiles">
       <button class="tile-card" data-go="puzzles" type="button"><div class="mini-wrap">${GW.miniBoard(dp.fen, dp.fen.split(' ')[1] === 'w')}</div><div><div class="kicker">Daily puzzle</div><h3>Rated ${dp.rating}</h3><p>${esc(dp.themes.filter(t => GW.THEME_LABEL[t]).slice(0, 2).map(t => GW.THEME_LABEL[t]).join(' · '))}</p></div></button>
-      <button class="tile-card" data-go="rush" type="button"><div class="tile-ico" style="--c:#ef476f">⚡</div><div><div class="kicker">Puzzle Rush</div><h3>Best: ${profile.rushBest}</h3><p>Three minutes, three strikes.</p></div></button>
-      <button class="tile-card" data-go="cups" type="button"><div class="tile-ico" style="--c:#ffb627">${GW.trophySVG('#ffb627')}</div><div><div class="kicker">Cups</div><h3>${cupsWon} / ${D.CUPS.length} won</h3><p>Knockout tournaments vs the bots.</p></div></button>
-      <button class="tile-card" data-go="learn" type="button"><div class="tile-ico" style="--c:#22c55e">📘</div><div><div class="kicker">${nextLesson ? 'Next lesson' : 'Learn'}</div><h3>${nextLesson ? esc(nextLesson.l.title) : 'All done!'}</h3><p>${nextLesson ? esc(nextLesson.c.title) : 'Every lesson completed.'}</p></div></button>
-      <button class="tile-card" data-go="kids" type="button"><div class="tile-ico" style="--c:#ff7eb3">⭐</div><div><div class="kicker">Kids Academy</div><h3>Learn with stars</h3><p>Games for young players.</p></div></button>
-      <button class="tile-card" data-go="openings" type="button"><div class="tile-ico" style="--c:#a855f7">📖</div><div><div class="kicker">Openings</div><h3>${(window.GW_OPENINGS || []).length.toLocaleString()} lines</h3><p>Explore and practise.</p></div></button>
-      <button class="tile-card" data-go="analysis" type="button"><div class="tile-ico" style="--c:#3b82f6">🔍</div><div><div class="kicker">Analysis board</div><h3>Best computer moves</h3><p>Stockfish lines for any position.</p></div></button>
-      <button class="tile-card" data-go="profile" type="button"><div class="tile-ico" style="--c:#14b8a6">🏅</div><div><div class="kicker">Achievements</div><h3>${profile.achievements.length} / ${D.ACHIEVEMENTS.length}</h3><p>Badges and your trophy cabinet.</p></div></button>
+      <button class="tile-card" data-go="rush" type="button"><div class="tile-ico">${TILE_ICON.bolt}</div><div><div class="kicker">Puzzle Rush</div><h3>Best: ${profile.rushBest}</h3><p>Three minutes, three strikes.</p></div></button>
+      <button class="tile-card" data-go="cups" type="button"><div class="tile-ico">${GW.trophySVG('#c4932f')}</div><div><div class="kicker">Cups</div><h3>${cupsWon} / ${D.CUPS.length} won</h3><p>Knockout tournaments vs the bots.</p></div></button>
+      <button class="tile-card" data-go="learn" type="button"><div class="tile-ico">${TILE_ICON.book}</div><div><div class="kicker">${nextLesson ? 'Next lesson' : 'Learn'}</div><h3>${nextLesson ? esc(nextLesson.l.title) : 'All done!'}</h3><p>${nextLesson ? esc(nextLesson.c.title) : 'Every lesson completed.'}</p></div></button>
+      <button class="tile-card" data-go="kids" type="button"><div class="tile-ico">${TILE_ICON.star}</div><div><div class="kicker">Kids Academy</div><h3>Learn with stars</h3><p>Games for young players.</p></div></button>
+      <button class="tile-card" data-go="openings" type="button"><div class="tile-ico">${TILE_ICON.tree}</div><div><div class="kicker">Openings</div><h3>${(window.GW_OPENINGS || []).length.toLocaleString()} lines</h3><p>Explore and practise.</p></div></button>
+      <button class="tile-card" data-go="analysis" type="button"><div class="tile-ico">${TILE_ICON.scope}</div><div><div class="kicker">Analysis board</div><h3>Best computer moves</h3><p>Stockfish lines for any position.</p></div></button>
+      <button class="tile-card" data-go="profile" type="button"><div class="tile-ico">${TILE_ICON.medal}</div><div><div class="kicker">Achievements</div><h3>${profile.achievements.length} / ${D.ACHIEVEMENTS.length}</h3><p>Badges and your trophy cabinet.</p></div></button>
     </section>
     <section class="bot-strip"><div class="row"><h2 class="grow">Challenge a bot</h2><button class="btn ghost" data-go="setup" type="button">All bots →</button></div>
       <div class="strip">${D.BOTS.filter(b => Math.abs(b.elo - profile.rating) < 450).slice(0, 8).map(b => `<button class="strip-bot" data-bot="${D.BOTS.indexOf(b)}" type="button"><div class="av">${avatarSVG(b)}</div><b>${b.name}</b><span>${b.elo}</span></button>`).join('')}</div></section>
@@ -179,7 +190,7 @@ $('pzBody').addEventListener('click', e => { const b = e.target.closest('[data-t
 function renderRushStart(){
   puzzleBoard.set(C.initState());
   $('pzTop').innerHTML = '';
-  $('pzBody').innerHTML = `<div class="rush-intro"><div class="rush-ico">⚡</div><h2>Puzzle Rush</h2><p class="muted">Solve as many puzzles as you can in 3 minutes. They get harder as you go. Three mistakes and you’re out.</p><div class="stat-row one"><div class="stat"><b>${profile.rushBest}</b><span>Personal best</span></div></div><button class="btn pop big" id="rushGo" type="button">Start</button></div>`;
+  $('pzBody').innerHTML = `<div class="rush-intro"><div class="rush-ico">${TILE_ICON.bolt}</div><h2>Puzzle Rush</h2><p class="muted">Solve as many puzzles as you can in 3 minutes. They get harder as you go. Three mistakes and you’re out.</p><div class="stat-row one"><div class="stat"><b>${profile.rushBest}</b><span>Personal best</span></div></div><button class="btn pop big" id="rushGo" type="button">Start</button></div>`;
   $('rushGo').addEventListener('click', startRush);
 }
 function startRush(){
@@ -409,7 +420,7 @@ function finishLesson(){
   markStep(LS.lesson.steps.length - 1);
   sfx.success();
   const c = LS.course, idx = c.lessons.indexOf(LS.lesson), next = c.lessons[idx + 1];
-  const m = GW.modal(`<div class="celebrate"><div class="big-trophy">🎓</div><h2>Lesson complete!</h2><div class="sub">${esc(LS.lesson.title)}</div><div class="stack">${next ? `<button class="btn pop big" id="lnNext" type="button">Next: ${esc(next.title)}</button>` : ''}<button class="btn" id="lnBack" type="button">Back to ${esc(c.title)}</button></div></div>`);
+  const m = GW.modal(`<div class="celebrate"><div class="big-trophy rush-ico">${TILE_ICON.cap}</div><h2>Lesson complete!</h2><div class="sub">${esc(LS.lesson.title)}</div><div class="stack">${next ? `<button class="btn pop big" id="lnNext" type="button">Next: ${esc(next.title)}</button>` : ''}<button class="btn" id="lnBack" type="button">Back to ${esc(c.title)}</button></div></div>`);
   m.querySelector('#lnNext')?.addEventListener('click', () => { GW.closeModal(); openLesson(next.id); });
   m.querySelector('#lnBack').addEventListener('click', () => { GW.closeModal(); learnCourse = c.id; document.body.classList.remove('kids-mode'); GW.show('learn'); });
 }
@@ -581,8 +592,8 @@ function setBar(v){
   const txt = v == null ? '' : GW.fmtEval(v).replace('+', '');
   bar.querySelector('.num.top').textContent = (AN.flipped ? v >= 0 : v < 0) ? txt : '';
   bar.querySelector('.num.bot').textContent = (AN.flipped ? v < 0 : v >= 0) ? txt : '';
-  bar.querySelector('.num.top').style.color = AN.flipped ? '#2b2950' : '#f4f4fb';
-  bar.querySelector('.num.bot').style.color = AN.flipped ? '#f4f4fb' : '#2b2950';
+  bar.querySelector('.num.top').style.color = AN.flipped ? '#2a2f2d' : '#f3f3f0';
+  bar.querySelector('.num.bot').style.color = AN.flipped ? '#f3f3f0' : '#2a2f2d';
 }
 const anGo = p => { AN.ply = clamp(p, 0, AN.moves.length); syncAn(null); };
 $('anFirst').addEventListener('click', () => anGo(0));
@@ -707,7 +718,7 @@ function onboarding(){
   let lvl = 1;
   const looks = [D.PEOPLE.you.look, D.BOTS[2].look, D.BOTS[6].look, D.BOTS[10].look, D.BOTS[4].look, D.BOTS[13].look];
   let look = 0;
-  const m = GW.modal(`<div class="onboard"><div class="ob-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lgOb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6c5ce7"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22b8b0"/></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#lgOb)"/><path d="M20 6l3 4h-6zM15 11h10l-2 3h-6zM17 15h6l1.5 10h-9zM12 27h16v3H12zM10 31h20v3H10z" fill="#fff"/><circle cx="30" cy="10" r="3" fill="#ffb627"/></svg></div><h2>Welcome to Greenwood Chess</h2><div class="sub">Play bots, win cups, solve puzzles and learn from first moves to grandmaster technique.</div>
+  const m = GW.modal(`<div class="onboard"><div class="ob-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#1d6b51"/><path d="M20 6l3 4h-6zM15 11h10l-2 3h-6zM17 15h6l1.5 10h-9zM12 27h16v3H12zM10 31h20v3H10z" fill="#fff"/></svg></div><h2>Welcome to Greenwood Chess</h2><div class="sub">Play bots, win cups, solve puzzles and learn from first moves to grandmaster technique.</div>
     <input class="search" id="obName" maxlength="20" placeholder="What should we call you?">
     <div class="label">Pick an avatar (you can customise it later)</div><div class="ob-looks">${looks.map((l, i) => `<button type="button" data-look="${i}" aria-pressed="${i === 0}"><div class="av">${D.avatar(l)}</div></button>`).join('')}</div>
     <div class="label">How well do you play?</div><div class="ob-levels">${levels.map(([n, r], i) => `<button type="button" data-lvl="${i}" aria-pressed="${i === lvl}"><b>${n}</b><span>${r}</span></button>`).join('')}</div>

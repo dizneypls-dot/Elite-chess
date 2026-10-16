@@ -235,7 +235,7 @@ const clsIcon = k => `<span class="ci" style="background:${CLS[k].color}">${CLS[
 const clsSVG = k => `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="11" fill="${CLS[k].color}" stroke="#fff" stroke-width="1.6"/><text x="12" y="16" text-anchor="middle" font-family="Outfit,system-ui,sans-serif" font-weight="800" font-size="${CLS[k].glyph.length > 1 ? 10 : 12}" fill="#fff">${CLS[k].glyph}</text></svg>`;
 
 /* ---------- Board component ---------- */
-const ARROW = {o:'rgb(255,170,0)', g:'rgb(34,176,125)', b:'rgb(92,124,255)', r:'rgb(235,85,70)', v:'rgb(139,124,255)'};
+const ARROW = {o:'rgb(255,170,0)', g:'rgb(34,176,125)', b:'rgb(92,124,255)', r:'rgb(235,85,70)', v:'rgb(100,116,139)'};
 function slidesFor(m, dragged){
   const s = [];
   if (!dragged) s.push([m.from, m.to]);
