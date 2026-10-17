@@ -362,6 +362,134 @@ const COURSES = [
     {t:'quiz', q:'You just blundered a pawn. What should you do?', options:['Resign', 'Play fast to make up time', 'Take a breath and find the best practical move'], answer:2, explain:'Many games are saved by fighting on calmly after a mistake.'},
     {t:'drill', text:'Hard practical positions: find the strongest move.', theme:'long', min:1900, max:2700, count:4}
   ]}
+]},
+
+/* ============================== JUNIOR TACTICS ============================== */
+{id:'junior', title:'Junior Tactics', icon:'wN', color:'#22b8b0', kids:true, level:'Ages 7+',
+ blurb:'Your first checkmates and tricks, one small step at a time.', lessons:[
+  {id:'j-mate1', title:'Checkmate in one', steps:[
+    {t:'info', text:'Checkmate means the king is in check and has no way out: it cannot move, nothing can block, and the attacker cannot be captured. One move is all you need!', fen:'6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1', arrows:[['a1','a8']]},
+    {t:'mate', text:'The black king is stuck behind its own pawns. Checkmate in one move!', fen:'6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1', n:1},
+    {t:'mate', text:'Your king helps your queen. Find checkmate in one.', fen:'k7/8/1K6/8/8/8/8/7Q w - - 0 1', n:1},
+    {t:'mate', text:'The king is surrounded by its own pieces. Which piece can jump in and give mate?', fen:'6rk/6pp/8/6N1/8/8/8/6K1 w - - 0 1', n:1}
+  ]},
+  {id:'j-ladder', title:'The rook ladder', steps:[
+    {t:'info', text:'Two rooks can climb up the board like a ladder. One rook guards a row while the other gives check on the next row. Step by step, the king is pushed to the edge.', fen:'7k/8/8/8/8/8/R7/1R4K1 w - - 0 1', arrows:[['a2','a7'],['b1','b8']]},
+    {t:'mate', text:'Use the ladder: checkmate in two moves.', fen:'7k/8/8/8/8/8/R7/1R4K1 w - - 0 1', n:2}
+  ]},
+  {id:'j-free', title:'Free pieces', steps:[
+    {t:'info', text:'Before every move, look for pieces your opponent forgot to protect. A piece with no defender is free to take!'},
+    {t:'quiz', q:'Your opponent’s knight is attacked by your bishop and nothing protects it. What should you usually do?', options:['Take it', 'Ignore it', 'Move your king'], answer:0, explain:'A free piece is free points. Take it, then check it really was free!'},
+    {t:'drill', text:'Find the free piece and grab it.', theme:'hangingPiece', min:600, max:1000, count:5}
+  ]},
+  {id:'j-fork', title:'Fork tricks', steps:[
+    {t:'info', text:'A fork attacks two things at once. Knights are the best forkers because they jump. Look for a square where your knight attacks the king and another piece!'},
+    {t:'drill', text:'Find the fork.', theme:'fork', min:700, max:1100, count:5}
+  ]},
+  {id:'j-mate2', title:'Mate in two', steps:[
+    {t:'info', text:'Sometimes you need two moves to checkmate. The first move often gives check or takes away the king’s last escape square.'},
+    {t:'drill', text:'Checkmate in two moves.', theme:'mateIn2', min:600, max:1100, count:5}
+  ]}
+]},
+
+/* ============================== ATTACKING THE KING ============================== */
+{id:'attack', title:'Attacking the King', icon:'wQ', color:'#e5484d', level:'1200–2200',
+ blurb:'When to attack, how to open lines, and the sacrifices that break a castle.', lessons:[
+  {id:'a-when', title:'When to attack', steps:[
+    {t:'info', text:'Attack the king when you have more pieces near it than your opponent has defending it. Count attackers and defenders on that side of the board. Three attackers against one defender usually means it is time to go.'},
+    {t:'info', text:'An attack also needs open lines. Pawn moves, piece sacrifices and pawn breaks open files and diagonals toward the king. A closed position slows any attack down.'},
+    {t:'quiz', q:'Which matters most before you launch a kingside attack?', options:['Having more pieces near the king than the defender', 'Having the bishop pair', 'Being ahead on the clock'], answer:0, explain:'Attacks succeed through local superiority: more attackers than defenders where it matters.'}
+  ]},
+  {id:'a-greek', title:'The Greek gift', steps:[
+    {t:'info', text:'The Greek gift is the bishop sacrifice on h7 (or h2). It works when the defending knight has left f6, your bishop eyes h7, your knight can jump to g5 and your queen can reach the h-file. A pawn on e5 keeps the defender away.', fen:'r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQK2R w KQ - 0 1', arrows:[['d3','h7'],['f3','g5'],['d1','h5']]},
+    {t:'accept', text:'All the conditions are there. Make the sacrifice that breaks open the black king.', fen:'r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQK2R w KQ - 0 1', moves:['d3h7'], hint:'d3h7'},
+    {t:'quiz', q:'After Bxh7+ Kxh7 Ng5+, what usually follows?', options:['Qh5, threatening mate on h7', 'Castling', 'A quiet pawn move'], answer:0, explain:'The queen swings to h5. Together with the knight on g5 she threatens mate on h7, and Black’s king has no good square.'}
+  ]},
+  {id:'a-opposite', title:'Opposite-side castling', steps:[
+    {t:'info', text:'When the kings castle on opposite sides, it becomes a race. Throw your pawns at the enemy king: your own king is not behind them, so pawn moves cost you nothing. Whoever opens lines first usually wins.', fen:'r4rk1/pp2ppbp/2np1np1/q7/3NP1P1/2N1BP2/PPPQ4/2KR1B1R w - - 0 1', arrows:[['h1','h7'],['g4','g5']]},
+    {t:'quiz', q:'Kings castled on opposite sides. What is usually right?', options:['Defend carefully and wait', 'Attack fast with pawns toward the enemy king', 'Trade queens immediately'], answer:1, explain:'Speed decides these races. Every tempo spent defending is a tempo your opponent uses to attack.'}
+  ]},
+  {id:'a-kingside', title:'Kingside attacks', steps:[
+    {t:'drill', text:'Kingside attacks from real games.', theme:'kingsideAttack', min:1200, max:2000, count:5},
+    {t:'drill', text:'The king is exposed. Strike!', theme:'exposedKing', min:1300, max:2100, count:4}
+  ]},
+  {id:'a-sac', title:'Sacrifices that win', steps:[
+    {t:'info', text:'A sacrifice gives up material to gain something bigger: open lines, time, or a king with no shelter. Before you sacrifice, calculate the forcing replies. If every defence loses, it is a winning sacrifice.'},
+    {t:'drill', text:'Find the winning sacrifice.', theme:'sacrifice', min:1300, max:2200, count:6}
+  ]},
+  {id:'a-finish', title:'Finishing the attack', steps:[
+    {t:'drill', text:'Mate in three.', theme:'mateIn3', min:1300, max:2100, count:5},
+    {t:'drill', text:'Mate in four and longer.', theme:'mateIn4', min:1500, max:2400, count:3}
+  ]}
+]},
+
+/* ============================== CALCULATION & DEFENCE ============================== */
+{id:'calc', title:'Calculation & Defence', icon:'wB', color:'#0ea5e9', level:'1300–2500',
+ blurb:'See further, spot quiet killers, and save the games you thought were lost.', lessons:[
+  {id:'c-cct', title:'Checks, captures, threats', steps:[
+    {t:'info', text:'Before every move, scan in this order: every check, every capture, every threat. Do it for your opponent too. Forcing moves come first because they limit your opponent’s answers, which makes them easier to calculate.'},
+    {t:'quiz', q:'Which moves should you look at first when calculating?', options:['Developing moves', 'Checks, captures and threats', 'Pawn moves on the edge'], answer:1, explain:'Forcing moves narrow the tree of possibilities, so you can see further and more accurately.'},
+    {t:'drill', text:'Warm-up: find the forcing win.', theme:'crushing', min:1300, max:1800, count:5}
+  ]},
+  {id:'c-quiet', title:'Quiet killer moves', steps:[
+    {t:'info', text:'Not every winning move is a check or a capture. A quiet move can create an unstoppable threat, cut off a defender, or take away the last escape square. When the forcing moves do not work, look for the quiet one.'},
+    {t:'drill', text:'Find the quiet move.', theme:'quietMove', min:1300, max:2300, count:6}
+  ]},
+  {id:'c-zwischenzug', title:'In-between moves', steps:[
+    {t:'info', text:'An in-between move (a zwischenzug) is an unexpected move played before the "obvious" recapture. A check or a bigger threat first can change everything. Always ask: do I have to recapture right now?'},
+    {t:'drill', text:'Spot the in-between move.', theme:'intermezzo', min:1300, max:2300, count:5}
+  ]},
+  {id:'c-defend', title:'Defending well', steps:[
+    {t:'info', text:'Good defence starts with your opponent’s threat. Ask what they want to do, then look for the move that stops it while improving your position. Sometimes the best defence is a counter-attack.'},
+    {t:'quiz', q:'Your opponent threatens mate. What do you check first?', options:['Whether you can stop the threat, or give checks that force a draw or win', 'Whether you can win a pawn', 'Whether you can castle'], answer:0, explain:'Deal with the biggest threat first. Forcing counter-play can also work, but only if it really is forcing.'},
+    {t:'drill', text:'Find the only defence.', theme:'defensiveMove', min:1300, max:2400, count:5}
+  ]},
+  {id:'c-zugzwang', title:'Zugzwang', steps:[
+    {t:'info', text:'Zugzwang is German for "compulsion to move". The side to move would love to pass, because every legal move makes things worse. It is common in endgames: take away the last good waiting move and the defence collapses.'},
+    {t:'drill', text:'Put your opponent in zugzwang.', theme:'zugzwang', min:1300, max:2500, count:4}
+  ]},
+  {id:'c-trapped', title:'Trapping pieces', steps:[
+    {t:'info', text:'A piece with no safe squares can be won even if it is not attacked yet. Bishops and knights that wander to the edge are the usual victims. Take away the squares first, then attack.'},
+    {t:'drill', text:'Trap the piece.', theme:'trappedPiece', min:1200, max:2300, count:4}
+  ]},
+  {id:'c-long', title:'Long calculations', steps:[
+    {t:'info', text:'For long lines, picture the board after each move rather than the moves in a list. Stop at quiet positions and evaluate them: material, king safety, and threats.'},
+    {t:'drill', text:'Calculate to the end.', theme:'veryLong', min:1500, max:2500, count:4}
+  ]}
+]},
+
+/* ============================== ENDGAME MASTERY ============================== */
+{id:'endmaster', title:'Endgame Mastery', icon:'wR', color:'#8b5cf6', level:'1400–2500',
+ blurb:'Breakthroughs, queen versus pawn, and the hardest basic mates.', lessons:[
+  {id:'m-breakthrough', title:'The pawn breakthrough', steps:[
+    {t:'info', text:'Three pawns against three on the fifth rank: a sacrifice breaks through. Push the middle pawn first. Whichever pawn takes, the next pawn steps forward and one of yours will promote.', fen:'7k/ppp5/8/PPP5/8/8/8/7K w - - 0 1', arrows:[['b5','b6']]},
+    {t:'accept', text:'Find the breakthrough.', fen:'7k/ppp5/8/PPP5/8/8/8/7K w - - 0 1', moves:['b5b6'], hint:'b5b6'},
+    {t:'quiz', q:'After b6 axb6, which move continues the breakthrough?', options:['c6', 'a6', 'Kg2'], answer:0, explain:'c6! If bxc6, then a6 and the a-pawn runs through. If Black leaves it, cxb7 and the pawn queens.'}
+  ]},
+  {id:'m-qvp', title:'Queen against a pawn on the seventh', steps:[
+    {t:'info', text:'A queen beats a centre or knight pawn on the seventh. Use checks and pins to force the enemy king in front of its pawn, then bring your king one step closer. Repeat until you can win the pawn.', fen:'8/8/8/8/8/1Q6/3pk3/7K w - - 0 1'},
+    {t:'quiz', q:'Why does the method work?', options:['Each time the king blocks its own pawn, you gain a free move for your king', 'The pawn cannot move on the seventh', 'Queens always win against pawns'], answer:0, explain:'When the defending king stands in front of its pawn, the pawn cannot promote, and you use that tempo to walk your king in.'},
+    {t:'playout', text:'Stop the pawn and checkmate. The computer defends. 40 moves.', fen:'8/8/8/8/8/1Q6/3pk3/7K w - - 0 1', goal:'mate', limit:40}
+  ]},
+  {id:'m-bishops', title:'Mate with two bishops', steps:[
+    {t:'info', text:'Two bishops side by side make a wall the king cannot cross. Use them together with your king to shrink the box, drive the king to a corner, then mate.', fen:'8/8/8/4k3/8/8/8/2B1KB2 w - - 0 1'},
+    {t:'playout', text:'Checkmate with king and two bishops. 40 moves.', fen:'8/8/8/4k3/8/8/8/2B1KB2 w - - 0 1', goal:'mate', limit:40}
+  ]},
+  {id:'m-bn', title:'Bishop and knight mate', steps:[
+    {t:'info', text:'The hardest basic mate. You can only mate in a corner the bishop controls. If the king runs to the wrong corner, use the knight and bishop together in a W-shaped route to push it along the edge.', fen:'8/8/8/4k3/8/8/8/1N2KB2 w - - 0 1'},
+    {t:'quiz', q:'With a light-squared bishop, which corners can you mate in?', options:['h1 and a8', 'a1 and h8', 'Any corner'], answer:0, explain:'The bishop must control the corner square: a light-squared bishop covers h1 and a8.'},
+    {t:'playout', text:'Checkmate with bishop and knight. The theoretical limit is 50 moves.', fen:'8/8/8/4k3/8/8/8/1N2KB2 w - - 0 1', goal:'mate', limit:50}
+  ]},
+  {id:'m-pawns', title:'Pawn endings that decide games', steps:[
+    {t:'info', text:'In pawn endings, count. Count the moves for each pawn to promote, and the moves for each king to catch it. Small details such as the opposition and spare pawn moves decide the result.'},
+    {t:'drill', text:'Pawn endgames.', theme:'pawnEndgame', min:1300, max:2400, count:5},
+    {t:'drill', text:'Promote!', theme:'promotion', min:1300, max:2300, count:4}
+  ]},
+  {id:'m-minor', title:'Minor-piece and queen endings', steps:[
+    {t:'drill', text:'Bishop endgames.', theme:'bishopEndgame', min:1100, max:2400, count:3},
+    {t:'drill', text:'Knight endgames.', theme:'knightEndgame', min:1100, max:2500, count:3},
+    {t:'drill', text:'Queen endgames.', theme:'queenEndgame', min:1200, max:2500, count:4}
+  ]}
 ]}
 ];
 

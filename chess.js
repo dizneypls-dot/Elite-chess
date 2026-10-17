@@ -334,8 +334,9 @@ function isMatedWithin(s, n){
 const isMate = s => !legal(s).length && inCheck(s);
 
 /* ---------- Stockfish wrapper ---------- */
-// Tries, in order: the WebAssembly build next to the page (fastest), the asm.js build next to the page,
-// then the cdnjs asm.js build through a blob worker. Searches run one at a time.
+// Tries, in order: Stockfish 17.1 lite (NNUE, with a calibrated strength setting, UCI_Elo), the same build embedded
+// in a single-file copy of the app, then the older Stockfish 10 builds (WebAssembly, asm.js, blob, cdnjs) for
+// browsers that can't run 17.1. Searches run one at a time.
 const SF_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
 const Engine = {
   status:'off', kind:null, worker:null, ready:null, queue:Promise.resolve(), onLine:null, listeners:[],
@@ -346,6 +347,15 @@ const Engine = {
     // 'blob' fetches the local asm.js build and starts it from memory (for app wrappers whose
     // WebView won't start workers from local files)
     const spawn = async kind => {
+      if (kind === 'sf17') return new Worker('sf17-lite.js');
+      if (kind === 'sf17blob'){
+        const js = document.getElementById('sf17-src'), wa = document.getElementById('sf17-wasm');
+        if (!js || !wa) throw new Error('not embedded');
+        // A page opened from a file can't let a worker fetch anything, so the worker gets the engine binary up front
+        const pre = `self.__sfw=(()=>{const s=atob(${JSON.stringify(wa.textContent.trim())}),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u})();`;
+        const src = js.textContent.split('r={locateFile:').join('r={wasmBinary:self.__sfw,locateFile:');
+        return new Worker(URL.createObjectURL(new Blob([pre, src], {type:'text/javascript'})));
+      }
       if (kind === 'wasm') return new Worker('stockfish.wasm.js');
       if (kind === 'asm') return new Worker('stockfish.js');
       if (kind === 'blob'){
@@ -359,7 +369,7 @@ const Engine = {
       let w;
       try { w = await spawn(kind); } catch (e) { reject(e); return; }
       const fail = () => { clearTimeout(timer); w.terminate(); reject(new Error('engine failed')); };
-      const timer = setTimeout(fail, kind === 'wasm' ? 12000 : 25000);
+      const timer = setTimeout(fail, kind === 'wasm' ? 12000 : kind === 'sf17blob' ? 20000 : 30000);
       w.onerror = fail;
       w.onmessage = e => {
         const line = String(e.data).trim();
@@ -373,7 +383,7 @@ const Engine = {
     this.ready = new Promise(r => { settle = r; });
     this.setStatus('loading');
     (async () => {
-      const kinds = (typeof WebAssembly === 'object' ? ['wasm'] : []).concat(['asm', 'blob', 'cdn']);
+      const kinds = (typeof WebAssembly === 'object' ? ['sf17', 'sf17blob', 'wasm'] : []).concat(['asm', 'blob', 'cdn']);
       for (const kind of kinds){
         try {
           const w = await handshake(kind);
@@ -391,9 +401,13 @@ const Engine = {
     return this.ready;
   },
   newGame(){ if (this.worker) this.worker.postMessage('ucinewgame'); },
+  // Stockfish 17.1 is the strong, calibrated engine; the older builds are fallbacks
+  get modern(){ return this.kind === 'sf17' || this.kind === 'sf17blob'; },
+  get fast(){ return this.modern || this.kind === 'wasm'; },
   // position: a full UCI 'position …' command. Returns {best, lines:[{score:{cp}|{mate}, pv:[uci…]}]} with scores for the side to move.
   // ms = 0 searches to `depth` with no time limit (complete iterations only, so scores are reliable).
-  search(position, {skill = 20, depth = 0, ms = 1000, multipv = 1, searchmoves = null} = {}){
+  // elo (Stockfish 17.1 only): play at that calibrated strength (1320–3190); 0 = full strength.
+  search(position, {skill = 20, depth = 0, ms = 1000, multipv = 1, searchmoves = null, elo = 0} = {}){
     const job = this.queue.then(() => new Promise(resolve => {
       const lines = [];
       const timer = setTimeout(() => { this.onLine = null; resolve(null); }, (ms || 60000) + 30000);
@@ -411,7 +425,12 @@ const Engine = {
         }
       };
       const w = this.worker;
-      w.postMessage(`setoption name Skill Level value ${skill}`);
+      if (this.modern){
+        w.postMessage(`setoption name UCI_LimitStrength value ${elo ? 'true' : 'false'}`);
+        // The lite build plays below its setting (measured against full Stockfish 17.1 at the same UCI_Elo:
+        // about 55–110 points weaker up to 2400, about 190 weaker at 2800), so the setting is raised to match.
+        if (elo) w.postMessage(`setoption name UCI_Elo value ${Math.max(1320, Math.min(3190, Math.round(elo + (elo < 2500 ? 80 : 80 + (elo - 2500) * 0.4))))}`);
+      } else w.postMessage(`setoption name Skill Level value ${skill}`);
       w.postMessage(`setoption name MultiPV value ${multipv}`);
       w.postMessage(position);
       w.postMessage((ms ? `go movetime ${Math.max(30, Math.round(ms))}` + (depth ? ` depth ${depth}` : '') : `go depth ${depth || 10}`) +

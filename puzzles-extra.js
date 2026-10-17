@@ -1,0 +1,20 @@
+/* Greenwood originals: puzzles found in engine games and verified with Stockfish (a unique winning move at
+   every step, checked by a deeper second search). Ratings are estimates until players have tried them.
+   Same format as puzzles.js. Kept in their own file so updating puzzles.js from Lichess never removes them. */
+(window.GW_PUZZLES = window.GW_PUZZLES || {themes:[], list:[]}).list.push(
+"gw0001;rnbqkbnr/pppp4/4p1pp/8/6Q1/1BN5/PPP2PPP/R1B1K1NR b KQkq - 1 7;g8f6 g4g6;639;51.49.4.11.45",
+"gw0002;5rk1/1Qp2ppp/2np1b1n/8/r2PP1q1/4BN2/P2NBP1K/R4R2 b - - 4 23;f6d4 f3d4 g4h4 h2g2;1199;51.46.44",
+"gw0003;8/8/1b1Q3k/pP6/Pn4r1/8/7P/7K b - - 0 58;h6h5 d6b6;794;50.49.11.44",
+"gw0004;r2nk2r/p3b1pp/5p2/3pB3/p2P4/P4N1P/1P2KPP1/2R3R1 w kq - 0 19;g2g4 f6e5;967;51.49.44",
+"gw0005;1r1q1r2/1p5k/3p2p1/pNb4p/B1Pp2P1/P2QnP2/7R/5RK1 b - - 2 32;d8g5 h2h5 g5h5 g4h5;1453;51.46.4.13.44",
+"gw0006;8/8/1p1k3P/1r5P/8/3K1Rb1/6P1/8 b - - 4 62;b5a5 f3g3;695;51.49.11.43",
+"gw0007;5k1r/p1p5/5n1b/1PP2b2/8/5p2/1P1NBP1B/2KR4 w - - 0 33;h2e5 f3e2;819;51.49.11.44",
+"gw0008;r1bkr3/1pp3pp/5n2/p2p1PQP/qB6/2Pn1B2/P2N1PP1/R4RK1 w - - 0 22;b4f8 e8f8;708;51.49.11.44",
+"gw0009;rn2kb1r/ppqbppp1/7p/7n/2B1P3/1N4P1/PP1NQP1P/R1B1K2R b KQkq - 1 12;e7e5 e2h5;780;51.49.11.44",
+"gw0010;4k3/p7/r5p1/q3p1Np/2P2n1P/b2r1QN1/5PP1/1R5K w - - 0 34;f3a8 d3d8;1301;51.49.23.13.44",
+"gw0011;7r/8/p5k1/P2p1N2/1P2n1P1/2bR2Bb/8/6K1 w - - 3 52;g3h4 h3g4;774;51.49.11.44",
+"gw0012;3Nrn2/6kp/6p1/qp2P3/p1pp1P2/2P4Q/2B3PP/R6K w - - 0 38;d8f7 g7f7 c3d4 a5d2;1236;51.46.44",
+"gw0013;r3kbnr/1b1p1ppp/p1n1p3/q7/Np1NPP2/8/PPP1B1PP/R1BQ1RK1 w kq - 1 10;d4f3 a5a4;808;51.49.11.45",
+"gw0014;1rb1kn1r/1p4p1/p1p4p/2Pp3n/Q2PppPq/P1P5/4PPBN/1RBK3R w k - 0 19;d1e1 e4e3;1269;50.49.23.44",
+"gw0015;r1r5/p4k1p/bp2p3/3pPppP/3n4/2P3P1/P2K1PB1/1RN4R b - - 0 24;d4f3 g2f3;801;51.49.11.44"
+);

@@ -15,17 +15,6 @@ GW.copyText = async (text, msg) => {
 const feedback = (el, kind, html) => { el.hidden = !kind; if (kind){ el.className = 'feedback ' + kind; el.innerHTML = html; } };
 const OK = html => `<span class="ic">✓</span><div>${html}</div>`;
 const BAD = html => `<span class="ic">✕</span><div>${html}</div>`;
-const LI = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-const TILE_ICON = {
-  bolt: LI('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'),
-  book: LI('<path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/>'),
-  star: LI('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'),
-  tree: LI('<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6h7M6 8.5V15a3 3 0 0 0 3 3h6.5"/>'),
-  scope: LI('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/>'),
-  medal: LI('<circle cx="12" cy="15" r="6"/><path d="M8.5 10.2L6 3h4l2 5 2-5h4l-2.5 7.2M12 12.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z"/>'),
-  puzzle: LI('<path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z"/>'),
-  cap: LI('<path d="M2 9l10-5 10 5-10 5zM6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5M22 9v6"/>')
-};
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 const lessonCount = () => Object.entries(profile.lessons).filter(([id, n]) => { const L = findLesson(id); return L && n >= L.lesson.steps.length; }).length;
 function findLesson(id){ for (const c of LRN.COURSES){ const l = c.lessons.find(x => x.id === id); if (l) return {course:c, lesson:l}; } return null; }
@@ -35,8 +24,8 @@ function ratingChart(w = 320, h = 90){
   const lo = Math.min(...pts) - 20, hi = Math.max(...pts) + 20;
   const x = i => i / (pts.length - 1) * (w - 8) + 4, y = v => h - 6 - (v - lo) / (hi - lo) * (h - 12);
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>` +
-    `<path d="${d} L${x(pts.length - 1).toFixed(1)},${h} L${x(0).toFixed(1)},${h} Z" fill="url(#cg)"/><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8b7cff" stop-opacity=".45"/><stop offset="1" stop-color="#8b7cff" stop-opacity="0"/></linearGradient></defs>` +
+    `<path d="${d} L${x(pts.length - 1).toFixed(1)},${h} L${x(0).toFixed(1)},${h} Z" fill="url(#cg)"/><path d="${d}" fill="none" stroke="#8b7cff" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
 const dailyPuzzle = () => {
   const day = Math.floor(Date.now() / 86400000), pool = GW.BANK.filter(p => p.rating >= 1200 && p.rating <= 1900);
@@ -44,6 +33,21 @@ const dailyPuzzle = () => {
 };
 
 /* ============================== HOME ============================== */
+// Seasonal pack, the world title match and followed players, between the hero and the goals
+function homeExtras(){
+  const p = GW.currentPack(), on = p && GW.settings.fxPack === p.id;
+  const sp = GW.worldSpotlight && GW.worldSpotlight();
+  let out = '<div class="home-row">';
+  if (p) out += `<button class="season-card" type="button" data-go="${on ? 'customize' : 'pack'}" data-pk="${p.id}"><span class="season-ico">${p.icon}</span><div class="grow"><div class="kicker">${on ? 'Theme on' : 'New theme'}</div><b>${esc(p.name)}</b><div class="muted small">${esc(p.line)}</div></div><span class="btn ${on ? 'ghost' : 'pop'}">${on ? 'Customize' : 'Try it'}</span></button>`;
+  if (sp){
+    const first = new Date(sp.firstGame + 'T12:00:00'), end = new Date(sp.to + 'T23:59:00'), now = new Date(), days = Math.ceil((first - now) / 86400000);
+    if (now <= end) out += `<button class="season-card wc" type="button" data-go="world"><span class="season-ico">👑</span><div class="grow"><div class="kicker">${now >= first ? 'Live now' : `${days} day${days === 1 ? '' : 's'} to go`}</div><b>${esc(sp.players.map(x => x.name).join(' vs '))}</b><div class="muted small">World Championship · ${esc(sp.place.split(',').slice(-2).join(',').trim())}</div></div><span class="btn ghost">Follow</span></button>`;
+  }
+  out += '</div>';
+  const fav = GW.followed ? GW.followed() : [];
+  if (fav.length) out += `<section class="goals-card"><div class="row"><div class="grow"><div class="kicker">Players you follow</div></div><button class="btn ghost" type="button" data-go="world">Rankings →</button></div><div class="fav-row">${fav.map(f => `<div class="fav"><b>${f.flag} ${esc(f.name)}</b><span class="muted small">#${f.rank} · ${f.rating}</span></div>`).join('')}</div></section>`;
+  return out;
+}
 function renderHome(){
   const g = GW.currentGame && GW.currentGame();
   const active = g && !g.over;
@@ -51,23 +55,37 @@ function renderHome(){
   const nextLesson = (() => { for (const c of LRN.COURSES) for (const l of c.lessons) if ((profile.lessons[l.id] || 0) < l.steps.length) return {c, l}; return null; })();
   const dp = dailyPuzzle();
   const cupsWon = Object.values(profile.trophies).filter(m => m === 'gold').length;
+  const goals = GW.dailyGoals(), lvl = GW.levelOf(profile.xp), base = GW.xpForLevel(lvl), next = GW.xpForLevel(lvl + 1);
+  const lvlPct = Math.round(((profile.xp || 0) - base) / (next - base) * 100);
+  const goalsDone = goals.filter(g => g.done).length;
+  const goalGo = {win:'setup', game:'setup', puzzle:'puzzles', daily:'puzzles', lesson:'learn', rush:'rush', review:'history', online:'setup'};
   $('scr-home').innerHTML = `
   <div class="home">
     <section class="hero">
       <div class="hero-me"><div class="av big">${avatarSVG(GW.me())}</div><div><div class="muted">${greeting()},</div><h1>${esc(profile.name || 'Player')}</h1>
-        <div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating ${delta ? `<i class="${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲' : '▼'} ${Math.abs(delta)}</i>` : ''}</span><span class="pill">${profile.wins}W · ${profile.draws}D · ${profile.losses}L</span><span class="pill">${TILE_ICON.puzzle} ${profile.puzzleRating} puzzles</span></div></div></div>
-      <div class="hero-chart">${ratingChart(360, 96)}</div>
+        <div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating ${delta ? `<i class="${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲' : '▼'} ${Math.abs(delta)}</i>` : ''}</span><span class="pill">${profile.wins}W · ${profile.draws}D · ${profile.losses}L</span><span class="pill">🧩 ${profile.puzzleRating}</span><span class="pill lvl" title="${profile.xp || 0} XP">Level ${lvl}</span>${GW.dayStreak() ? `<span class="pill streak">🔥 ${GW.dayStreak()} day${GW.dayStreak() > 1 ? 's' : ''}</span>` : ''}</div></div></div>
+      ${profile.history.length >= 2 ? `<div class="hero-chart">${ratingChart(360, 96)}</div>` : '<div class="hero-chart empty"><div class="hero-tip">Win rated games to climb. Your rating graph appears here.</div></div>'}
       <div class="hero-cta">${active ? '<button class="btn pop big" id="hmContinue" type="button">Continue game</button>' : ''}<button class="btn ${active ? 'violet' : 'pop'} big" id="hmPlay" type="button">Play a bot</button></div>
+    </section>
+    ${homeExtras()}
+    <section class="goals-card">
+      <div class="goals-head"><div><div class="kicker">Today’s goals</div><h2>${goalsDone === 3 ? 'All done. See you tomorrow!' : `${goalsDone} of 3 done`}</h2></div>
+        <div class="xpbox"><div class="xpline"><b>Level ${lvl}</b><span>${(profile.xp || 0) - base} / ${next - base} XP</span></div><div class="bar"><div style="width:${lvlPct}%"></div></div></div></div>
+      <div class="goal-list">${goals.map(g => `<button class="goal${g.done ? ' done' : ''}" type="button" data-go="${goalGo[g.id]}"><span class="goal-tick">${g.done ? '✓' : ''}</span><span class="grow"><b>${esc(g.text)}</b><span class="bar"><div style="width:${Math.round(g.n / g.need * 100)}%"></div></span></span><span class="goal-xp">+${g.xp}</span></button>`).join('')}</div>
+      <div class="muted small">Finish all three for a 75 XP bonus. New goals every day.</div>
     </section>
     <section class="tiles">
       <button class="tile-card" data-go="puzzles" type="button"><div class="mini-wrap">${GW.miniBoard(dp.fen, dp.fen.split(' ')[1] === 'w')}</div><div><div class="kicker">Daily puzzle</div><h3>Rated ${dp.rating}</h3><p>${esc(dp.themes.filter(t => GW.THEME_LABEL[t]).slice(0, 2).map(t => GW.THEME_LABEL[t]).join(' · '))}</p></div></button>
-      <button class="tile-card" data-go="rush" type="button"><div class="tile-ico">${TILE_ICON.bolt}</div><div><div class="kicker">Puzzle Rush</div><h3>Best: ${profile.rushBest}</h3><p>Three minutes, three strikes.</p></div></button>
-      <button class="tile-card" data-go="cups" type="button"><div class="tile-ico">${GW.trophySVG('#c4932f')}</div><div><div class="kicker">Cups</div><h3>${cupsWon} / ${D.CUPS.length} won</h3><p>Knockout tournaments vs the bots.</p></div></button>
-      <button class="tile-card" data-go="learn" type="button"><div class="tile-ico">${TILE_ICON.book}</div><div><div class="kicker">${nextLesson ? 'Next lesson' : 'Learn'}</div><h3>${nextLesson ? esc(nextLesson.l.title) : 'All done!'}</h3><p>${nextLesson ? esc(nextLesson.c.title) : 'Every lesson completed.'}</p></div></button>
-      <button class="tile-card" data-go="kids" type="button"><div class="tile-ico">${TILE_ICON.star}</div><div><div class="kicker">Kids Academy</div><h3>Learn with stars</h3><p>Games for young players.</p></div></button>
-      <button class="tile-card" data-go="openings" type="button"><div class="tile-ico">${TILE_ICON.tree}</div><div><div class="kicker">Openings</div><h3>${(window.GW_OPENINGS || []).length.toLocaleString()} lines</h3><p>Explore and practise.</p></div></button>
-      <button class="tile-card" data-go="analysis" type="button"><div class="tile-ico">${TILE_ICON.scope}</div><div><div class="kicker">Analysis board</div><h3>Best computer moves</h3><p>Stockfish lines for any position.</p></div></button>
-      <button class="tile-card" data-go="profile" type="button"><div class="tile-ico">${TILE_ICON.medal}</div><div><div class="kicker">Achievements</div><h3>${profile.achievements.length} / ${D.ACHIEVEMENTS.length}</h3><p>Badges and your trophy cabinet.</p></div></button>
+      <button class="tile-card" data-go="rush" type="button"><div class="tile-ico" style="--c:#ef476f">⚡</div><div><div class="kicker">Puzzle Rush</div><h3>Best: ${profile.rushBest}</h3><p>Three minutes, three strikes.</p></div></button>
+      <button class="tile-card" data-go="cups" type="button"><div class="tile-ico" style="--c:#ffb627">${GW.trophySVG('#ffb627')}</div><div><div class="kicker">Cups</div><h3>${cupsWon} / ${D.CUPS.length} won</h3><p>Knockout tournaments vs the bots.</p></div></button>
+      <button class="tile-card" data-go="learn" type="button"><div class="tile-ico" style="--c:#22c55e">📘</div><div><div class="kicker">${nextLesson ? 'Next lesson' : 'Learn'}</div><h3>${nextLesson ? esc(nextLesson.l.title) : 'All done!'}</h3><p>${nextLesson ? esc(nextLesson.c.title) : 'Every lesson completed.'}</p></div></button>
+      <button class="tile-card" data-go="kids" type="button"><div class="tile-ico" style="--c:#ff7eb3">⭐</div><div><div class="kicker">Kids Academy</div><h3>Learn with stars</h3><p>Games for young players.</p></div></button>
+      <button class="tile-card" data-go="openings" type="button"><div class="tile-ico" style="--c:#a855f7">📖</div><div><div class="kicker">Openings</div><h3>${(window.GW_OPENINGS || []).length.toLocaleString()} lines</h3><p>Explore and practise.</p></div></button>
+      <button class="tile-card" data-go="analysis" type="button"><div class="tile-ico" style="--c:#3b82f6">🔍</div><div><div class="kicker">Analysis board</div><h3>Best computer moves</h3><p>Stockfish lines for any position.</p></div></button>
+      <button class="tile-card" data-go="world" type="button"><div class="tile-ico" style="--c:#0ea5e9">🌍</div><div><div class="kicker">World chess</div><h3>FIDE top 25</h3><p>Rankings, the title match and events.</p></div></button>
+      <button class="tile-card" data-go="legends" type="button"><div class="tile-ico" style="--c:#b45309">🏛️</div><div><div class="kicker">Legends</div><h3>Stories & history</h3><p>Champions and the immortal games.</p></div></button>
+      <button class="tile-card" data-go="customize" type="button"><div class="tile-ico" style="--c:#ec4899">🎨</div><div><div class="kicker">Customize</div><h3>Boards & pieces</h3><p>Seasonal themes and real sounds.</p></div></button>
+      <button class="tile-card" data-go="profile" type="button"><div class="tile-ico" style="--c:#14b8a6">🏅</div><div><div class="kicker">Achievements</div><h3>${profile.achievements.length} / ${D.ACHIEVEMENTS.length}</h3><p>Badges and your trophy cabinet.</p></div></button>
     </section>
     <section class="bot-strip"><div class="row"><h2 class="grow">Challenge a bot</h2><button class="btn ghost" data-go="setup" type="button">All bots →</button></div>
       <div class="strip">${D.BOTS.filter(b => Math.abs(b.elo - profile.rating) < 450).slice(0, 8).map(b => `<button class="strip-bot" data-bot="${D.BOTS.indexOf(b)}" type="button"><div class="av">${avatarSVG(b)}</div><b>${b.name}</b><span>${b.elo}</span></button>`).join('')}</div></section>
@@ -83,6 +101,7 @@ $('scr-home').addEventListener('click', e => {
   if (go === 'rush') return GW.show('puzzles', {mode:'rush'});
   if (go === 'puzzles') return GW.show('puzzles', {mode:'daily'});
   if (go === 'kids') return GW.show('learn', {course:'kids'});
+  if (go === 'pack'){ GW.applyPack(D.PACKS.find(p => p.id === b.dataset.pk)); GW.applySettings(); sfx.success(); return renderHome(); }
   GW.show(go);
 });
 GW.register('home', {onShow: renderHome});
@@ -118,6 +137,8 @@ function rateSolve(p, won){
   return d;
 }
 function afterSolve(p, won){
+  GW.markDay();
+  if (won){ GW.track('puzzle'); if (PZ.mode === 'daily') GW.track('daily'); profile.xp = (profile.xp || 0) + 4; }
   profile.streak = won ? profile.streak + 1 : 0;
   profile.bestStreak = Math.max(profile.bestStreak || 0, profile.streak);
   if (won && !profile.solved.includes(p.id)){ profile.solved.push(p.id); if (profile.solved.length > 3000) profile.solved.shift(); }
@@ -190,7 +211,7 @@ $('pzBody').addEventListener('click', e => { const b = e.target.closest('[data-t
 function renderRushStart(){
   puzzleBoard.set(C.initState());
   $('pzTop').innerHTML = '';
-  $('pzBody').innerHTML = `<div class="rush-intro"><div class="rush-ico">${TILE_ICON.bolt}</div><h2>Puzzle Rush</h2><p class="muted">Solve as many puzzles as you can in 3 minutes. They get harder as you go. Three mistakes and you’re out.</p><div class="stat-row one"><div class="stat"><b>${profile.rushBest}</b><span>Personal best</span></div></div><button class="btn pop big" id="rushGo" type="button">Start</button></div>`;
+  $('pzBody').innerHTML = `<div class="rush-intro"><div class="rush-ico">⚡</div><h2>Puzzle Rush</h2><p class="muted">Solve as many puzzles as you can in 3 minutes. They get harder as you go. Three mistakes and you’re out.</p><div class="stat-row one"><div class="stat"><b>${profile.rushBest}</b><span>Personal best</span></div></div><button class="btn pop big" id="rushGo" type="button">Start</button></div>`;
   $('rushGo').addEventListener('click', startRush);
 }
 function startRush(){
@@ -222,6 +243,7 @@ function endRush(){
   if (PZ.task) PZ.task.done = true;
   const best = r.score > profile.rushBest;
   profile.rushBest = Math.max(profile.rushBest, r.score);
+  GW.track('rush', r.score);
   if (r.score >= 15) GW.unlock('rush-15');
   saveProfile();
   sfx.end();
@@ -295,8 +317,10 @@ function openLesson(id){
 }
 function markStep(k){
   const id = LS.lesson.id;
+  const wasDone = (profile.lessons[id] || 0) >= LS.lesson.steps.length;
   profile.lessons[id] = Math.max(profile.lessons[id] || 0, k + 1);
   saveProfile();
+  if (!wasDone && profile.lessons[id] >= LS.lesson.steps.length){ GW.markDay(); GW.track('lesson'); GW.addXP(20, 'Lesson complete'); }
   if (lessonCount() >= 10) GW.unlock('lessons-10');
   const kids = LRN.COURSES.find(c => c.id === 'kids');
   if (kids && kids.lessons.every(l => (profile.lessons[l.id] || 0) >= l.steps.length)) GW.unlock('kids');
@@ -420,7 +444,7 @@ function finishLesson(){
   markStep(LS.lesson.steps.length - 1);
   sfx.success();
   const c = LS.course, idx = c.lessons.indexOf(LS.lesson), next = c.lessons[idx + 1];
-  const m = GW.modal(`<div class="celebrate"><div class="big-trophy rush-ico">${TILE_ICON.cap}</div><h2>Lesson complete!</h2><div class="sub">${esc(LS.lesson.title)}</div><div class="stack">${next ? `<button class="btn pop big" id="lnNext" type="button">Next: ${esc(next.title)}</button>` : ''}<button class="btn" id="lnBack" type="button">Back to ${esc(c.title)}</button></div></div>`);
+  const m = GW.modal(`<div class="celebrate"><div class="big-trophy">🎓</div><h2>Lesson complete!</h2><div class="sub">${esc(LS.lesson.title)}</div><div class="stack">${next ? `<button class="btn pop big" id="lnNext" type="button">Next: ${esc(next.title)}</button>` : ''}<button class="btn" id="lnBack" type="button">Back to ${esc(c.title)}</button></div></div>`);
   m.querySelector('#lnNext')?.addEventListener('click', () => { GW.closeModal(); openLesson(next.id); });
   m.querySelector('#lnBack').addEventListener('click', () => { GW.closeModal(); learnCourse = c.id; document.body.classList.remove('kids-mode'); GW.show('learn'); });
 }
@@ -433,12 +457,27 @@ $('scr-openings').innerHTML = `
     <div class="row" style="margin-top:6px"><button class="btn" id="opBack" type="button">${ICON.prev}Back</button><button class="btn" id="opReset" type="button">Start</button><button class="btn" id="opFlip" type="button">${ICON.flip}Flip</button><span class="grow"></span><button class="btn" id="opAnalyse" type="button">Analyse</button></div>
   </div>
   <aside class="panel">
-    <h2>Opening explorer</h2>
+    <div class="tabs" id="opView"><button type="button" data-v="rep" aria-pressed="true">Best openings</button><button type="button" data-v="exp" aria-pressed="false">Explorer</button></div>
     <input class="search" id="opSearch" type="search" placeholder="Search ${(window.GW_OPENINGS || []).length.toLocaleString()} openings by name or ECO code" autocomplete="off">
     <div id="opBody"></div>
   </aside>
 </div>`;
-const OP = {moves:[], flipped:false, practice:null};
+const OP = {moves:[], flipped:false, practice:null, view:'rep', rep:null, filter:'all'};
+const REP = window.GW_REPERTOIRE || [];
+function repList(){
+  const f = OP.filter, list = REP.filter(o => f === 'all' || (f === 'w' || f === 'b' ? o.side === f : o.level === f));
+  return `<div class="chips" id="opFilter">${[['all', 'All'], ['w', 'For White'], ['b', 'For Black'], ['Beginner', 'Beginner'], ['Club', 'Club'], ['Advanced', 'Advanced']].map(([v, t]) => `<button class="chip-btn" type="button" data-f="${v}" aria-pressed="${v === f}">${t}</button>`).join('')}</div>
+    <div class="op-list rep-list">${list.map(o => `<button class="op-item rep" type="button" data-rep="${o.id}"><span class="side-dot ${o.side}"></span><span class="grow"><b>${esc(o.name)}</b><span class="muted small">${esc(o.idea.split('. ')[0])}.</span></span><span class="tag">${esc(o.level)}</span></button>`).join('')}</div>`;
+}
+function repCard(o){
+  return `<div class="rep-card"><div class="row"><span class="eco">${esc(o.eco)}</span><b class="grow">${esc(o.name)}</b><span class="tag">${o.side === 'w' ? 'White' : 'Black'} · ${esc(o.level)}</span></div>
+    <p>${esc(o.idea)}</p>
+    <div class="rep-plans"><div><div class="label">White’s plan</div><p>${esc(o.plans[0])}</p></div><div><div class="label">Black’s plan</div><p>${esc(o.plans[1])}</p></div></div>
+    <div class="muted small">Played by ${esc(o.players)} · ${o.tags.map(esc).join(', ')}</div>
+    ${o.trap ? `<div class="trap"><b>⚠️ Trap: ${esc(o.trap.name)}</b><p class="small">${esc(o.trap.text)}</p><button class="btn" type="button" data-trap="${o.id}">Show the trap</button></div>` : ''}
+    <button class="btn ghost" type="button" data-replist="1">← All openings</button></div>`;
+}
+const loadSan = pgn => { OP.moves = C.parsePGN(pgn); $('opSearch').value = ''; syncOpen(null); };
 const openBoard = new Board($('openBoard'), {
   canMove: () => OP.practice ? OP.practice.canMove() : true,
   onMove: (m, d) => { if (OP.practice) return OP.practice.handle(m, d); OP.moves.push(m); syncOpen(m, d); sfx.forMove(moveKind(m, openState()), true); }
@@ -454,6 +493,8 @@ function renderOpen(){
     body.innerHTML = `<div class="muted small">${res.length === 60 ? 'First 60 matches' : `${res.length} matches`}</div><div class="op-list">${res.map(o => `<button class="op-item" type="button" data-line="${o[2]}"><span class="eco">${o[0]}</span><span class="grow">${esc(o[1])}</span><span class="muted small">${o[2].split(' ').length} plies</span></button>`).join('')}</div>`;
     return;
   }
+  if (OP.view === 'rep' && !OP.rep){ body.innerHTML = repList(); return; }
+  const repO = OP.view === 'rep' && REP.find(o => o.id === OP.rep);
   const ucis = OP.moves.map(uci), seq = ucis.join(' ');
   const name = GW.openingName(ucis);
   const s = openState();
@@ -472,7 +513,7 @@ function renderOpen(){
   const rows = [...next.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 14).map(([mv, e]) => { const m = fromUci(s, mv); return m ? `<button class="op-item" type="button" data-move="${mv}"><b class="san">${san(s, m)}</b><span class="grow">${esc(e.name)}</span><span class="muted small">${e.count} lines</span></button>` : ''; }).join('');
   let movesTxt = '', t = C.initState();
   OP.moves.forEach((m, k) => { if (k % 2 === 0) movesTxt += `${k / 2 + 1}. `; movesTxt += san(t, m) + ' '; t = apply(t, m); });
-  body.innerHTML = `<div class="op-name">${name ? `<span class="eco">${name.eco}</span> ${esc(name.name)}` : OP.moves.length ? '<span class="muted">Out of the named lines</span>' : 'Starting position'}</div>
+  body.innerHTML = (repO ? repCard(repO) : '') + `<div class="op-name">${name ? `<span class="eco">${name.eco}</span> ${esc(name.name)}` : OP.moves.length ? '<span class="muted">Out of the named lines</span>' : 'Starting position'}</div>
     <div class="op-moves">${movesTxt || '<span class="muted">Make a move on the board or pick one below.</span>'}</div>
     ${OP.moves.length >= 2 ? `<div class="row"><button class="btn violet grow" type="button" data-practice="w">Practise as White</button><button class="btn violet grow" type="button" data-practice="b">Practise as Black</button></div>` : ''}
     ${rows ? `<div class="label">Continuations</div><div class="op-list">${rows}</div>` : ''}
@@ -497,7 +538,26 @@ function startPractice(side){
   $('opPRestart').addEventListener('click', () => { OP.practice.reset(); feedback($('opFb'), 'info', '<div>Your move.</div>'); });
   $('opPStop').addEventListener('click', () => { OP.practice = null; syncOpen(null); });
 }
+$('opView').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]');
+  if (!b || OP.practice) return;
+  OP.view = b.dataset.v; OP.rep = null;
+  $('opView').querySelectorAll('[data-v]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (OP.view === 'rep'){ OP.moves = []; syncOpen(null); } else renderOpen();
+});
 $('opBody').addEventListener('click', e => {
+  const r = e.target.closest('[data-rep],[data-f],[data-trap],[data-replist]');
+  if (r){
+    if (r.dataset.f){ OP.filter = r.dataset.f; return renderOpen(); }
+    if (r.dataset.replist){ OP.rep = null; OP.moves = []; return syncOpen(null); }
+    const o = REP.find(x => x.id === (r.dataset.rep || r.dataset.trap));
+    if (!o) return;
+    OP.rep = o.id;
+    if (o.side !== (OP.flipped ? 'b' : 'w')){ OP.flipped = o.side === 'b'; }
+    loadSan(r.dataset.trap ? o.trap.pgn : o.line);
+    if (r.dataset.trap) GW.toast(`<b>${esc(o.trap.name)}</b><br>Step back with ← to see how it happens.`);
+    return;
+  }
   const b = e.target.closest('[data-line],[data-move],[data-practice]');
   if (!b) return;
   if (b.dataset.line) return loadLine(b.dataset.line);
@@ -505,9 +565,9 @@ $('opBody').addEventListener('click', e => {
   const m = fromUci(openState(), b.dataset.move);
   if (m){ OP.moves.push(m); syncOpen(m, false); sfx.forMove(moveKind(m, openState()), true); }
 });
-$('opSearch').addEventListener('input', () => { if (!OP.practice) renderOpen(); });
+$('opSearch').addEventListener('input', () => { if (OP.practice) return; if (OP.view === 'rep' && $('opSearch').value.trim()){ OP.view = 'exp'; OP.rep = null; $('opView').querySelectorAll('[data-v]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === 'exp'))); } renderOpen(); });
 $('opBack').addEventListener('click', () => { if (OP.practice) return; OP.moves.pop(); syncOpen(null); });
-$('opReset').addEventListener('click', () => { OP.practice = null; OP.moves = []; syncOpen(null); });
+$('opReset').addEventListener('click', () => { OP.practice = null; OP.moves = []; OP.rep = null; syncOpen(null); });
 $('opFlip').addEventListener('click', () => { OP.flipped = !OP.flipped; openBoard.flipped = OP.flipped; openBoard.render(); });
 $('opAnalyse').addEventListener('click', () => GW.show('analysis', {moves: OP.moves.slice(), ply: OP.moves.length}));
 GW.register('openings', {onShow: () => { if (!OP.practice) syncOpen(null); }});
@@ -569,7 +629,7 @@ async function runEngine(){
     linesEl.innerHTML = `<div class="muted small">Stockfish unavailable: quick built-in analysis.</div>${q.best ? `<div class="eline"><span class="ev">${GW.fmtEval(v)}</span>${san(s, fromUci(s, q.best))}</div>` : ''}`;
     return;
   }
-  const depths = Engine.kind === 'wasm' ? [10, 14, 18] : [8, 11, 13];
+  const depths = Engine.fast ? [10, 14, 18] : [8, 11, 13];
   for (const depth of depths){
     const r = await Engine.search(`position fen ${C.toFEN(s)}`, {depth, ms:0, multipv:3});
     if (tok !== AN.token || !r) return;
@@ -592,8 +652,8 @@ function setBar(v){
   const txt = v == null ? '' : GW.fmtEval(v).replace('+', '');
   bar.querySelector('.num.top').textContent = (AN.flipped ? v >= 0 : v < 0) ? txt : '';
   bar.querySelector('.num.bot').textContent = (AN.flipped ? v < 0 : v >= 0) ? txt : '';
-  bar.querySelector('.num.top').style.color = AN.flipped ? '#2a2f2d' : '#f3f3f0';
-  bar.querySelector('.num.bot').style.color = AN.flipped ? '#f3f3f0' : '#2a2f2d';
+  bar.querySelector('.num.top').style.color = AN.flipped ? '#2b2950' : '#f4f4fb';
+  bar.querySelector('.num.bot').style.color = AN.flipped ? '#f4f4fb' : '#2b2950';
 }
 const anGo = p => { AN.ply = clamp(p, 0, AN.moves.length); syncAn(null); };
 $('anFirst').addEventListener('click', () => anGo(0));
@@ -662,16 +722,23 @@ function renderProfile(){
       <div class="muted small">Skin</div>${sw('skin', P.skin, L.skin)}
       <div class="muted small">Hair style</div>${sw('style', P.style, L.style)}
       <div class="muted small">Hair colour</div>${sw('hair', P.hair, L.hair)}
-      <div class="muted small">Shirt</div>${sw('shirt', P.shirt, L.shirt)}
+      <div class="muted small">Eyes</div>${sw('eye', P.eye, L.eye || '#5b3a24')}
+      <div class="muted small">Outfit</div>${sw('outfit', P.outfit, L.outfit || 'tee')}
+      <div class="muted small">Outfit colour</div>${sw('shirt', P.shirt, L.shirt)}
       <div class="muted small">Background</div>${sw('bg', P.bg, L.bg)}
       <div class="muted small">Extra</div>${sw('extra', P.extra, extraOf())}
     </section>
     <section class="stack-lg">
+      ${GW.accountCard ? GW.accountCard() : ''}
       <div class="panel"><div class="row"><h2 class="grow">Rating</h2><span class="muted">${profile.history.length} rated games</span></div>${ratingChart(560, 140)}
         <div class="stat-row four"><div class="stat"><b>${total}</b><span>Games</span></div><div class="stat"><b>${profile.wins}</b><span>Wins</span></div><div class="stat"><b>${profile.draws}</b><span>Draws</span></div><div class="stat"><b>${profile.losses}</b><span>Losses</span></div></div>
         <div class="stat-row four"><div class="stat"><b>${profile.puzzleRating}</b><span>Puzzle rating</span></div><div class="stat"><b>${profile.solved.length}</b><span>Puzzles</span></div><div class="stat"><b>${profile.rushBest}</b><span>Rush best</span></div><div class="stat"><b>${lessonCount()}</b><span>Lessons</span></div></div></div>
       <div class="panel"><h2>Trophy cabinet</h2><div class="cabinet">${D.CUPS.map(c => { const m = profile.trophies[c.id]; return `<div class="shelf-item${m ? '' : ' locked'}"><div class="trophy">${GW.trophySVG(m ? c.color : '#8a86b8', m)}</div><b>${esc(c.name)}</b><span class="muted small">${m ? m[0].toUpperCase() + m.slice(1) : 'Not won yet'}</span></div>`; }).join('')}</div></div>
       <div class="panel"><h2>Achievements <span class="muted">${profile.achievements.length}/${D.ACHIEVEMENTS.length}</span></h2><div class="ach-grid">${D.ACHIEVEMENTS.map(a => `<div class="ach${profile.achievements.includes(a.id) ? ' got' : ''}"><span class="ach-ico">${a.icon}</span><div><b>${esc(a.name)}</b><span class="muted small">${esc(a.desc)}</span></div></div>`).join('')}</div></div>
+      <div class="panel"><h2>About and credits</h2><div class="muted small credits">
+        <p>Piece sets: ${Object.values(GW.pieceSets()).filter(p => !p.themed).map(p => `${esc(p.name)} by ${esc(p.author)} (${esc(p.license)})`).join('; ')}. From the <a href="https://github.com/lichess-org/lila/blob/master/COPYING.md" target="_blank" rel="noopener">lichess.org collection</a>.</p>
+        <p>Puzzles and opening names: <a href="https://database.lichess.org" target="_blank" rel="noopener">lichess.org open databases</a> (CC0). Engine: <a href="https://stockfishchess.org" target="_blank" rel="noopener">Stockfish 17.1</a> via <a href="https://github.com/nmrugg/stockfish.js" target="_blank" rel="noopener">stockfish.js</a> (GPLv3), with Stockfish 10 as a fallback for older browsers. Bots rated 1350 and up play at Stockfish’s calibrated strength (UCI_Elo).</p>
+        <p>World rankings: <a href="https://ratings.fide.com" target="_blank" rel="noopener">FIDE ratings</a>. Recorded sounds: public-domain (CC0) recordings from <a href="https://freesound.org" target="_blank" rel="noopener">freesound.org</a> by Amatsuuu, simone_ds, JJTaynos and mh2o. Characters, seasonal character pieces and flyovers, boards, themes and lessons are original to Greenwood Chess. Bot ratings and performance estimates are approximate.</p></div></div>
     </section>
   </div>`;
 }
@@ -680,7 +747,12 @@ $('scr-profile').addEventListener('click', e => {
   const b = e.target.closest('.parts button');
   if (!b) return;
   const key = b.closest('.parts').dataset.part, v = b.dataset.v, L = profile.look;
-  if (key === 'extra'){ for (const x of D.AVATAR_PARTS.extra) delete L[x]; delete L.beard; if (v === 'beard') L.beard = L.hair; else if (v !== 'none') L[v] = v === 'glasses' || v === 'shades' ? '#1f2937' : v === 'freckles' || v === 'crown' ? true : '#6c5ce7'; }
+  if (key === 'extra'){
+    for (const x of D.AVATAR_PARTS.extra) delete L[x];
+    if (v === 'beard' || v === 'mustache') L[v] = L.hair;
+    else if (v === 'earrings') L[v] = '#ffd166';
+    else if (v !== 'none') L[v] = v === 'glasses' || v === 'shades' ? '#1f2937' : ['freckles', 'crown', 'stubble'].includes(v) ? true : '#6c5ce7';
+  }
   else L[key] = v;
   saveProfile();
   renderProfile();
@@ -691,24 +763,54 @@ GW.register('profile', {onShow: renderProfile});
 function openSettings(){
   const s = GW.settings;
   const m = GW.modal(`<h2>Settings</h2>
-    <div><div class="label" style="margin-bottom:10px">Board</div><div class="themes">${D.THEMES.map(t => `<button class="theme" type="button" data-id="${t.id}" aria-pressed="${t.id === s.theme}"><div class="sw" style="background:${t.bg || 'transparent'}"><i style="background:${t.l}"></i><i style="background:${t.d}"></i><i style="background:${t.d}"></i><i style="background:${t.l}"></i></div>${t.name}</button>`).join('')}</div></div>
+    <button class="btn big-row" type="button" id="stLookBtn"><span class="grow" style="text-align:left">🎨 Boards, pieces, seasonal themes and sounds</span><span>›</span></button>
+    <div><div class="label" style="margin-bottom:10px">Appearance</div><div class="tabs" id="stLook">${[['auto', 'Match device'], ['light', 'Light'], ['dark', 'Dark']].map(([v, t]) => `<button type="button" data-look="${v}" aria-pressed="${(s.appearance || 'auto') === v}">${t}</button>`).join('')}</div></div>
     <div class="stack">
       <div class="switch">Sound<button type="button" data-opt="sound" aria-pressed="${s.sound}" aria-label="Sound"></button></div>
       <div class="switch">Show legal moves<button type="button" data-opt="hints" aria-pressed="${s.hints}" aria-label="Show legal moves"></button></div>
       <div class="switch">Coordinates<button type="button" data-opt="coords" aria-pressed="${s.coords}" aria-label="Coordinates"></button></div>
+      <div class="switch">Vibrate on moves (phones)<button type="button" data-opt="haptics" aria-pressed="${s.haptics}" aria-label="Vibrate on moves"></button></div>
+      <div class="switch">Premoves (move during your opponent’s turn)<button type="button" data-opt="premove" aria-pressed="${s.premove !== false}" aria-label="Premoves"></button></div>
+      <div class="switch">Always promote to a queen<button type="button" data-opt="autoQueen" aria-pressed="${!!s.autoQueen}" aria-label="Always promote to a queen"></button></div>
     </div>
-    <div class="muted small">Right-click and drag on the board to draw arrows; right-click a square to highlight it. Hold Shift, Ctrl or Alt for other colours.</div>
+    <div class="muted small">To castle, drag or swipe your king onto a rook (or two squares toward it). Right-click and drag on the board to draw arrows; right-click a square to highlight it. Hold Shift, Ctrl or Alt for other colours.</div>
+    <div class="stack"><div class="label">Your progress</div>
+      <div class="muted small">Progress is saved on this device. Copy a backup code to move it to a new phone or browser.</div>
+      <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div></div>
     <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span><button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => {
-    const t = e.target.closest('.theme'), o = e.target.closest('[data-opt]');
+    const t = e.target.closest('.theme'), o = e.target.closest('[data-opt]'), lk = e.target.closest('[data-look]');
+    if (lk){ s.appearance = lk.dataset.look; GW.applySettings(); m.querySelectorAll('[data-look]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.look === s.appearance))); }
     if (t){ s.theme = t.dataset.id; GW.applySettings(); m.querySelectorAll('.theme').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.id === s.theme))); }
     if (o){ s[o.dataset.opt] = !s[o.dataset.opt]; o.setAttribute('aria-pressed', String(s[o.dataset.opt])); GW.applySettings(); if (o.dataset.opt === 'sound' && s.sound){ sfx.unlock(); sfx.forMove('move', true); } }
   });
   m.querySelector('#stDone').addEventListener('click', () => GW.closeModal());
+  m.querySelector('#stLookBtn').addEventListener('click', () => { GW.closeModal(); GW.show('customize'); });
+  const KEYS = ['gw-profile', 'gw-settings', 'gw-setup', 'gw-archive', 'gw-fav'];
+  m.querySelector('#stBackup').addEventListener('click', () => {
+    const data = {};
+    for (const k of KEYS){ try { const v = localStorage.getItem(k); if (v) data[k] = JSON.parse(v); } catch (_) {} }
+    const code = 'GWC1:' + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    GW.copyText(code, 'Backup code copied. Keep it somewhere safe.');
+  });
+  m.querySelector('#stRestore').addEventListener('click', () => {
+    const r = GW.modal(`<h2>Restore progress</h2><div class="sub">Paste your backup code. This replaces the progress on this device.</div>
+      <textarea class="textbox" id="rsCode" rows="5" placeholder="GWC1:…"></textarea><div class="feedback bad" id="rsErr" hidden></div>
+      <div class="row"><button class="btn grow" id="rsCancel" type="button">Cancel</button><button class="btn pop grow" id="rsGo" type="button">Restore</button></div>`);
+    r.querySelector('#rsCancel').addEventListener('click', () => GW.closeModal());
+    r.querySelector('#rsGo').addEventListener('click', () => {
+      const raw = r.querySelector('#rsCode').value.trim(), err = r.querySelector('#rsErr');
+      let data = null;
+      try { if (raw.startsWith('GWC1:')) data = JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))); } catch (_) {}
+      if (!data || !data['gw-profile']){ err.hidden = false; err.innerHTML = '<span class="ic">!</span><div>That doesn’t look like a Greenwood backup code. Copy the whole code, starting with GWC1:</div>'; return; }
+      try { for (const k of KEYS){ if (data[k]) localStorage.setItem(k, JSON.stringify(data[k])); else localStorage.removeItem(k); } localStorage.removeItem('gw-live'); } catch (_) {}
+      location.reload();
+    });
+  });
   m.querySelector('#stReset').addEventListener('click', () => {
     const c = GW.modal(`<h2>Reset everything?</h2><div class="sub">Your rating, puzzles, lessons, cups and achievements will be cleared on this device.</div><div class="row"><button class="btn grow" id="rsNo" type="button">Cancel</button><button class="btn danger grow" id="rsYes" type="button">Reset</button></div>`);
     c.querySelector('#rsNo').addEventListener('click', () => GW.closeModal());
-    c.querySelector('#rsYes').addEventListener('click', () => { try { localStorage.removeItem('gw-profile'); localStorage.removeItem('gw-setup'); } catch (_) {} location.reload(); });
+    c.querySelector('#rsYes').addEventListener('click', () => { try { localStorage.removeItem('gw-profile'); localStorage.removeItem('gw-setup'); localStorage.removeItem('gw-archive'); localStorage.removeItem('gw-live'); } catch (_) {} location.reload(); });
   });
 }
 
@@ -718,8 +820,8 @@ function onboarding(){
   let lvl = 1;
   const looks = [D.PEOPLE.you.look, D.BOTS[2].look, D.BOTS[6].look, D.BOTS[10].look, D.BOTS[4].look, D.BOTS[13].look];
   let look = 0;
-  const m = GW.modal(`<div class="onboard"><div class="ob-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#1d6b51"/><path d="M20 6l3 4h-6zM15 11h10l-2 3h-6zM17 15h6l1.5 10h-9zM12 27h16v3H12zM10 31h20v3H10z" fill="#fff"/></svg></div><h2>Welcome to Greenwood Chess</h2><div class="sub">Play bots, win cups, solve puzzles and learn from first moves to grandmaster technique.</div>
-    <input class="search" id="obName" maxlength="20" placeholder="What should we call you?">
+  const m = GW.modal(`<div class="onboard"><div class="ob-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lgOb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6c5ce7"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22b8b0"/></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#lgOb)"/><path d="M20 6l3 4h-6zM15 11h10l-2 3h-6zM17 15h6l1.5 10h-9zM12 27h16v3H12zM10 31h20v3H10z" fill="#fff"/><circle cx="30" cy="10" r="3" fill="#ffb627"/></svg></div><h2>Welcome to Greenwood Chess</h2><div class="sub">Play bots, win cups, solve puzzles and learn from first moves to grandmaster technique.</div>
+    <input class="search" id="obName" maxlength="20" placeholder="What should we call you?" value="${esc(profile.name || '')}">
     <div class="label">Pick an avatar (you can customise it later)</div><div class="ob-looks">${looks.map((l, i) => `<button type="button" data-look="${i}" aria-pressed="${i === 0}"><div class="av">${D.avatar(l)}</div></button>`).join('')}</div>
     <div class="label">How well do you play?</div><div class="ob-levels">${levels.map(([n, r], i) => `<button type="button" data-lvl="${i}" aria-pressed="${i === lvl}"><b>${n}</b><span>${r}</span></button>`).join('')}</div>
     <button class="btn pop big" id="obGo" type="button">Let’s play</button></div>`, {wide:true, onClose: () => { if (!profile.onboarded){ profile.onboarded = true; saveProfile(); } }});
@@ -741,15 +843,67 @@ function onboarding(){
   });
 }
 
+/* ============================== MY GAMES ============================== */
+const ago = t => { const d = (Date.now() - t) / 1000; return d < 3600 ? `${Math.max(1, Math.round(d / 60))} min ago` : d < 86400 ? `${Math.round(d / 3600)} h ago` : d < 86400 * 7 ? `${Math.round(d / 86400)} d ago` : new Date(t).toLocaleDateString(); };
+function finalFen(g){ let st = C.initState(); for (const u of g.moves){ const m = fromUci(st, u); if (!m) break; st = apply(st, m); } return C.toFEN(st); }
+let histFilter = 'all';
+function renderHistory(){
+  const all = GW.archive();
+  const mine = g => g.mode === 'cpu' || g.mode === 'online';
+  const out = g => !mine(g) ? 'none' : g.winner === g.human ? 'win' : g.winner ? 'loss' : 'draw';
+  const list = all.filter(g => histFilter === 'all' || out(g) === histFilter);
+  const n = k => all.filter(g => out(g) === k).length;
+  $('scr-history').innerHTML = `
+  <div class="page-head"><div><div class="kicker">Your archive</div><h1>My games</h1></div>
+    <div class="tabs small" id="hsFilter" style="min-width:300px">${[['all', `All ${all.length}`], ['win', `Won ${n('win')}`], ['loss', `Lost ${n('loss')}`], ['draw', `Drawn ${n('draw')}`]].map(([v, t]) => `<button type="button" data-f="${v}" aria-pressed="${v === histFilter}">${t}</button>`).join('')}</div></div>
+  ${list.length ? `<div class="hist-list">${list.map(g => {
+      const k = all.indexOf(g), o = out(g), rival = mine(g) ? GW.playerOf(g, opp(g.human)) : null;
+      const label = o === 'win' ? 'Won' : o === 'loss' ? 'Lost' : o === 'draw' ? 'Draw' : g.result;
+      const who = mine(g) ? `vs ${esc(rival.name)} <span class="muted">${rival.elo || ''}${g.mode === 'online' ? ' · Online' : ''}</span>` : g.mode === 'pvp' ? 'Friend game' : `${esc(GW.playerOf(g, 'w').name)} vs ${esc(GW.playerOf(g, 'b').name)}`;
+      return `<article class="hist-card ${o}"><div class="hist-mini">${GW.miniBoard(finalFen(g), g.human === 'b')}</div>
+        <div class="hist-body"><div class="row" style="gap:8px"><span class="res-badge ${o}">${label}</span>${g.delta != null ? `<span class="${g.delta >= 0 ? 'up' : 'down'}" style="font-weight:800">${g.delta >= 0 ? '+' : ''}${g.delta}</span>` : ''}<span class="muted small grow" style="text-align:right">${ago(g.t)}</span></div>
+          <div style="font-weight:800">${who}</div>
+          <div class="muted small">${esc(g.reason[0].toUpperCase() + g.reason.slice(1))} · ${Math.ceil(g.moves.length / 2)} moves${g.opening ? ' · ' + esc(g.opening) : ''}</div>
+          <div class="row" style="gap:8px;margin-top:4px"><button class="btn pop" type="button" data-rv="${k}">Review</button><button class="btn" type="button" data-pgn="${k}">Copy PGN</button>${g.mode === 'cpu' ? `<button class="btn ghost" type="button" data-rm="${k}">Rematch</button>` : ''}</div></div></article>`;
+    }).join('')}</div>` : `<div class="panel empty-state"><div style="font-size:48px">♟️</div><h2>${all.length ? 'Nothing here yet' : 'No games yet'}</h2><p class="muted">Finished games are saved here so you can review them later.</p><button class="btn pop" type="button" id="hsPlay">Play a game</button></div>`}`;
+  $('hsPlay')?.addEventListener('click', () => GW.show('setup'));
+}
+$('scr-history').addEventListener('click', e => {
+  const all = GW.archive(), b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.f){ histFilter = b.dataset.f; return renderHistory(); }
+  if (b.dataset.rv) return GW.reviewArchived(all[+b.dataset.rv]);
+  if (b.dataset.pgn) return GW.copyText(GW.archivedPGN(all[+b.dataset.pgn]), 'PGN copied');
+  if (b.dataset.rm){ const g = all[+b.dataset.rm]; return GW.startGame({mode:'cpu', human:g.human, bots:g.bots, tc:g.tc, rated:g.rated}); }
+});
+GW.register('history', {onShow: renderHistory});
+
+GW.renderRailMe = () => {
+  const el = $('railMe');
+  if (el) el.innerHTML = `<div class="av">${avatarSVG(GW.me())}</div><div style="min-width:0"><b>${esc(profile.name || 'Player')}</b><span>${profile.rating} · Lv ${GW.levelOf(profile.xp)}${GW.dayStreak() ? ` · 🔥${GW.dayStreak()}` : ''}</span></div>`;
+};
+$('railMe').addEventListener('click', () => GW.show('profile'));
+
 /* ============================== NAVIGATION & START-UP ============================== */
+// Keep page content clear of the bottom tab bar, whatever height it ends up (large fonts make it taller)
+{
+  const rail = document.querySelector('.rail');
+  const fit = () => {
+    const bottom = getComputedStyle(rail).position === 'fixed';
+    document.documentElement.style.setProperty('--tabbar-h', bottom ? Math.ceil(rail.getBoundingClientRect().height) + 'px' : '0px');
+  };
+  try { new ResizeObserver(fit).observe(rail); } catch (_) {}
+  addEventListener('resize', fit);
+  fit();
+}
 document.querySelector('.rail').addEventListener('click', e => {
   const b = e.target.closest('.nav');
   if (!b) return;
   const n = b.dataset.nav;
   if (n === 'settings') return openSettings();
   if (n === 'more'){
-    const items = [['cups', 'Cups'], ['openings', 'Openings'], ['analysis', 'Analysis board'], ['profile', 'Profile'], ['settings', 'Settings']];
-    const m = GW.modal(`<h2>More</h2><div class="stack">${items.map(([k, t]) => `<button class="btn big-row" type="button" data-more="${k}">${t}</button>`).join('')}</div>`);
+    const items = [['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']];
+    const m = GW.modal(`<h2>More</h2><div class="more-grid">${items.map(([k, i, t]) => `<button class="more-item" type="button" data-more="${k}"><span>${i}</span>${t}</button>`).join('')}</div>`);
     m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else GW.show(x.dataset.more); });
     return;
   }
@@ -760,10 +914,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape'){ GW.closeMod
 
 window.claude?.hot?.snapshot?.(() => ({screen: GW.currentScreen(), game: GW.snapshotGame ? GW.snapshotGame() : null}));
 function boot(data){
+  const pack = GW.autoPack();
   GW.applySettings();
+  if (pack) setTimeout(() => GW.toast(`${pack.icon} <b>${esc(pack.name)} theme is on</b><br>${esc(pack.line)} Change it any time in Customize.`), 900);
   if (data && data.game && data.screen === 'game') return GW.restoreGame(data.game);
+  // Resume a game left unfinished when the app was closed
+  let live = null;
+  try { live = JSON.parse(localStorage.getItem('gw-live') || 'null'); } catch (_) {}
+  if (live && Array.isArray(live.moves) && live.moves.length && profile.onboarded){
+    try { GW.restoreGame(live); GW.toast('<b>Welcome back</b><br>Your game was saved where you left it.'); return; } catch (_) {}
+  }
   GW.show('home');
-  if (!profile.onboarded) setTimeout(onboarding, 300);
+  const next = () => { if (!profile.onboarded) setTimeout(onboarding, 300); else GW.show('home'); };
+  if (GW.needsLanding && GW.needsLanding()) GW.landing({onDone: next}); else next();
 }
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 })();

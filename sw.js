@@ -1,16 +1,21 @@
-// Offline cache for the installed (Add to Home Screen) web app. Bump VERSION when files change.
-const VERSION = 'gw-v4';
-const FILES = ['./', 'index.html', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png',
-  'chess.js', 'data.js', 'puzzles.js', 'openings.js', 'lessons.js', 'core.js', 'peerjs.min.js', 'play.js', 'learn.js',
-  'stockfish.wasm.js', 'stockfish.wasm', 'stockfish.js'];
+// Offline cache for the installed (Add to Home Screen) web app. Built by tools/site.py.
+const VERSION = 'gw-d11d6260bc';
+const FILES = ['./', 'index.html', 'chess.js', 'data.js', 'pieces.js', 'seasonal.js', 'themes.js', 'sounds.js', 'world-data.js', 'repertoire.js', 'puzzles.js', 'puzzles-extra.js', 'openings.js', 'lessons.js', 'core.js', 'play.js', 'world.js', 'customize.js', 'auth.js', 'learn.js', 'online.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'stockfish.js', 'stockfish.wasm', 'stockfish.wasm.js', 'sf17-lite.js', 'sf17-lite.wasm'];
 self.addEventListener('install', e => e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  // Cache-first for app files and Google Fonts; everything else goes to the network.
+  const url = new URL(e.request.url);
+  // The page itself: network first, so a new version shows up straight away; the cached copy when offline
+  if (e.request.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('index.html')){
+    e.respondWith(fetch(e.request).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put('index.html', copy)); return res; })
+      .catch(() => caches.match('index.html')));
+    return;
+  }
+  // App files and Google Fonts: cache first (the version above changes whenever a file changes)
   e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-    if (res.ok && (new URL(e.request.url).origin === location.origin || /fonts\.(googleapis|gstatic)\.com/.test(e.request.url))){
+    if (res.ok && (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com/.test(e.request.url))){
       const copy = res.clone(); caches.open(VERSION).then(c => c.put(e.request, copy));
     }
     return res;
