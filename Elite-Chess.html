@@ -10844,11 +10844,27 @@ let current = null;
 const NAV_OF = {history:'history', home:'home', setup:'play', game:'play', review:'play', cups:'cups', puzzles:'puzzles', learn:'learn', lesson:'learn',
                 openings:'openings', analysis:'analysis', profile:'profile', world:'world', legends:'legends', customize:'customize'};
 function register(name, def){ screens[name] = def; }
+// On the website, the browser's (and phone's) Back follows the app's screens instead of leaving the site.
+// Inside Claude and in the Android app, Back is handled by the host, so the address is left alone.
+let goingBack = false;
+const webHistory = !(window.claude && typeof window.claude.use === 'function') && !window.EliteApp && /^https?:$/.test(location.protocol);
+let fromPop = false;
+if (webHistory) addEventListener('popstate', e => {
+  if (document.getElementById('modal')){ closeModal(); try { history.pushState({gw: current}, '', '#' + current); } catch (_) {} return; }
+  const target = e.state && e.state.gw;
+  fromPop = true; goingBack = true;
+  try { show(target && screens[target] ? target : 'home'); } finally { fromPop = false; goingBack = false; }
+});
+// Screens visited, so Back retraces your steps (Home clears the trail)
+const trail = [];
 function show(name, arg){
   const def = screens[name];
   if (!def) return;
   if (current && screens[current].onHide) screens[current].onHide();
+  if (name === 'home') trail.length = 0;
+  else if (!goingBack && current && current !== name){ trail.push(current); if (trail.length > 30) trail.shift(); }
   current = name;
+  if (webHistory && !fromPop){ try { history[name === 'home' && !history.state ? 'replaceState' : 'pushState']({gw: name}, '', '#' + name); } catch (_) {} }
   for (const sec of document.querySelectorAll('.screen')) sec.hidden = sec.id !== 'scr-' + name;
   document.querySelectorAll('.nav').forEach(b => { if (b.dataset.nav === NAV_OF[name]) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   document.body.dataset.screen = name;
@@ -10857,6 +10873,31 @@ function show(name, arg){
   window.scrollTo(0, 0);
 }
 const currentScreen = () => current;
+// Back: the previous screen, else Home; returns 'home-root' when already on Home with nowhere to go
+function back(){
+  while (trail.length){
+    const prev = trail.pop();
+    if (prev !== current && screens[prev]){ goingBack = true; try { show(prev); } finally { goingBack = false; } return 'back'; }
+  }
+  if (current !== 'home'){ show('home'); return 'home'; }
+  return 'home-root';
+}
+// Leaving the app: only the Android app can close itself (it provides window.EliteApp)
+const canExit = () => !!(window.EliteApp && window.EliteApp.exit);
+function confirmExit(){
+  if (!canExit()) return;
+  const m = modal(`<h2>Leave Elite Chess?</h2><div class="sub">Your progress is saved${window.GW && GW.currentGame && GW.currentGame() && !GW.currentGame().over ? ', and your game will be waiting on Home' : ''}.</div>
+    <div class="row"><button class="btn grow" id="exStay" type="button">Stay</button><button class="btn pop grow" id="exGo" type="button">Exit</button></div>`);
+  m.querySelector('#exStay').addEventListener('click', () => closeModal());
+  m.querySelector('#exGo').addEventListener('click', () => { closeModal(); try { window.EliteApp.exit(); } catch (_) {} });
+}
+// The phone's Back button (Android app): close a window, then step back, then offer to leave
+function hardwareBack(){
+  if (document.getElementById('modal')){ closeModal(); return 'ok'; }
+  if (document.getElementById('landing')) return 'exit';
+  if (back() === 'home-root') confirmExit();
+  return 'ok';
+}
 
 function barHTML(who, color, extra = {}){
   return `<div class="av">${avatarSVG(who, extra.mood || (extra.think ? 'think' : ''))}</div><div class="pinfo"><div class="pname">${esc(who.name)}${who.elo ? `<span class="elo">(${who.elo})</span>` : ''}</div>` +
@@ -10881,7 +10922,7 @@ window.GW = {
   pieceSets, pieceImg, applyPack, autoPack, currentPack, ownLook, restoreOwnLook, flyNow, scheduleFly, SOUND_PACKS, PIECE_KEYS,
   profile, saveProfile, me, unlock, markDay, dayStreak, buzz, levelOf, xpForLevel, dailyGoals, addXP, track, rateGame, recordResult, toast, modal, closeModal, sfx, moveKind,
   openingName, BOOK_PREFIX, OPEN_BY_LINE, THEME_LABEL, BANK, pickPuzzle, bankSpec, classicSpec, CLS, clsIcon, clsSVG,
-  ARROW, slidesFor, Board, miniBoard, engineBest, engineDepth, Task, register, show, currentScreen, barHTML
+  ARROW, slidesFor, Board, miniBoard, engineBest, engineDepth, Task, register, show, currentScreen, barHTML, back, canExit, confirmExit, hardwareBack
 };
 })();
 
@@ -11005,7 +11046,24 @@ $('cvcB').addEventListener('click', e => { const b = e.target.closest('.tile'); 
 $('sides').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ setup.side = b.dataset.v; renderSetup(); } });
 $('tcGrid').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ setup.tc = b.dataset.v; renderSetup(); } });
 $('ratedBtn').addEventListener('click', () => { setup.rated = !setup.rated; renderSetup(); });
-$('playBtn').addEventListener('click', () => startGame(configFromSetup()));
+// Starting a new game while one is unfinished: continue it, or resign it (a rated game counts as a loss) and start
+$('playBtn').addEventListener('click', () => {
+  const g = G;
+  if (!g || g.over || !g.hist.length || g.mode === 'online') return startGame(configFromSetup());
+  const ratedCpu = g.rated && g.mode === 'cpu';
+  const m = GW.modal(`<h2>Game in progress</h2><div class="sub">You have an unfinished game${ratedCpu ? ' (rated)' : ''}.</div>
+    <div class="stack"><button class="btn pop big" id="gpCont" type="button">Continue that game</button>
+      <button class="btn" id="gpNew" type="button">${ratedCpu ? 'Resign it and start the new game' : 'Start the new game'}</button>
+      ${ratedCpu ? '<div class="muted small">Resigning counts as a loss for your rating.</div>' : ''}
+      <button class="btn ghost" id="gpCancel" type="button">Cancel</button></div>`);
+  m.querySelector('#gpCont').addEventListener('click', () => { GW.closeModal(); GW.show('game'); });
+  m.querySelector('#gpCancel').addEventListener('click', () => GW.closeModal());
+  m.querySelector('#gpNew').addEventListener('click', () => {
+    GW.closeModal();
+    if (ratedCpu){ g.resigned = g.human; ui.away = false; renderGame(); }
+    startGame(configFromSetup());
+  });
+});
 Engine.onStatus(() => { if (GW.currentScreen() === 'setup') renderSetup(); if (G) renderGame(); });
 /* ---------- Online: find a game ---------- */
 function renderOnline(){
@@ -11095,7 +11153,7 @@ $('scr-game').innerHTML = `
 </div>`;
 
 let G = null;
-const ui = {thinking:false, paused:false, flipped:false, view:null, lastChat:null};
+const ui = {thinking:false, paused:false, away:false, flipped:false, view:null, lastChat:null};
 let thinkToken = 0, turnStart = now();
 const cur = () => G.states[G.states.length - 1];
 const gameBoard = new Board($('gameBoard'), {canMove: () => humanCanMove(), onMove: (m, dragged) => doMove(m, dragged),
@@ -11149,7 +11207,7 @@ function startGame(cfg){
         assisted:false, tookBack:false});
   turnStart = now();
   Engine.newGame();
-  Object.assign(ui, {thinking:false, paused:false, flipped: cfg.human === 'b', view:null});
+  Object.assign(ui, {thinking:false, paused:false, away:false, flipped: cfg.human === 'b', view:null});
   gameBoard.premove = null;
   if (Object.values(cfg.bots).some(k => k != null && D.BOTS[k].sf)) Engine.boot();
   G.chat = cfg.mode === 'cpu' ? D.BOTS[cfg.bots[opp(cfg.human)]].greet : '';
@@ -11184,7 +11242,7 @@ function gameStatus(){
 }
 
 /* Clocks: G.times[k] holds both players' remaining ms when position k began; the side to move's clock runs from turnStart */
-const clockRunning = () => !!(G && G.tcObj && G.hist.length > 0 && !G.over && !ui.paused);
+const clockRunning = () => !!(G && G.tcObj && G.hist.length > 0 && !G.over && !ui.paused && !ui.away);
 function clockLeft(c){
   const t = G.times[G.times.length - 1][c];
   return clockRunning() && cur().turn === c ? t - (now() - turnStart) : t;
@@ -11335,7 +11393,7 @@ async function hint(){
   renderGame();
 }
 
-const cpuToMove = () => G && !G.over && !ui.paused && G.bots[cur().turn] != null;
+const cpuToMove = () => G && !G.over && !ui.paused && !ui.away && G.bots[cur().turn] != null;
 const humanCanMove = () => G && ui.view == null && (G.mode !== 'online' || cur().turn === G.human) && !ui.thinking && !G.over && !ui.paused && G.bots[cur().turn] == null && GW.currentScreen() === 'game';
 
 async function maybeCpu(){
@@ -11688,7 +11746,20 @@ $('drawBtn').addEventListener('click', async () => {
   renderGame();
 });
 $('reviewNowBtn').addEventListener('click', () => startReview(G));
-GW.register('game', {onShow: () => { if (G){ syncBoard(null); renderGame(); maybeCpu(); } }});
+// Leaving the game screen pauses a game against bots (clocks and thinking stop) until you come back;
+// an online game can't wait, so it keeps going and says so
+GW.register('game', {
+  onShow: () => { if (G){ if (ui.away){ ui.away = false; turnStart = now(); } syncBoard(null); renderGame(); maybeCpu(); } },
+  onHide: () => {
+    if (!G || G.over) return;
+    if (G.mode === 'online'){ GW.toast('<b>Your online game is still running</b><br>Tap Play to go back to it.'); return; }
+    if (!ui.away){
+      if (clockRunning()) G.times[G.times.length - 1][cur().turn] = clockLeft(cur().turn);
+      ui.away = true; ui.thinking = false; thinkToken++;
+      persistGame();
+    }
+  }
+});
 
 /* ============================== GAME REVIEW ============================== */
 $('scr-review').innerHTML = `
@@ -13617,7 +13688,7 @@ function openSettings(){
     <div class="stack"><div class="label">Your progress</div>
       <div class="muted small">Progress is saved on this device. Copy a backup code to move it to a new phone or browser.</div>
       <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div></div>
-    <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span><button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
+    <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span>${GW.canExit() ? '<button class="btn" id="stExit" type="button">Exit app</button>' : ''}<button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => {
     const t = e.target.closest('.theme'), o = e.target.closest('[data-opt]'), lk = e.target.closest('[data-look]');
     if (lk){ s.appearance = lk.dataset.look; GW.applySettings(); m.querySelectorAll('[data-look]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.look === s.appearance))); }
@@ -13625,6 +13696,7 @@ function openSettings(){
     if (o){ s[o.dataset.opt] = !s[o.dataset.opt]; o.setAttribute('aria-pressed', String(s[o.dataset.opt])); GW.applySettings(); if (o.dataset.opt === 'sound' && s.sound){ sfx.unlock(); sfx.forMove('move', true); } }
   });
   m.querySelector('#stDone').addEventListener('click', () => GW.closeModal());
+  m.querySelector('#stExit')?.addEventListener('click', () => { GW.closeModal(); GW.confirmExit(); });
   m.querySelector('#stLookBtn').addEventListener('click', () => { GW.closeModal(); GW.show('customize'); });
   const KEYS = ['gw-profile', 'gw-settings', 'gw-setup', 'gw-archive', 'gw-fav'];
   m.querySelector('#stBackup').addEventListener('click', () => {
@@ -13742,9 +13814,9 @@ document.querySelector('.rail').addEventListener('click', e => {
   const n = b.dataset.nav;
   if (n === 'settings') return openSettings();
   if (n === 'more'){
-    const items = [['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']];
+    const items = [['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
     const m = GW.modal(`<h2>More</h2><div class="more-grid">${items.map(([k, i, t]) => `<button class="more-item" type="button" data-more="${k}"><span>${i}</span>${t}</button>`).join('')}</div>`);
-    m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else GW.show(x.dataset.more); });
+    m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else if (x.dataset.more === 'exit') GW.confirmExit(); else GW.show(x.dataset.more); });
     return;
   }
   if (n === 'play'){ const g = GW.currentGame(); return GW.show(g && !g.over ? 'game' : 'setup'); }
@@ -13752,6 +13824,12 @@ document.querySelector('.rail').addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape'){ GW.closeModal(); GW.boards.forEach(b => b.cancelPromo()); } });
 
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){ hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt > 60000 && !document.getElementById('landing')){ GW.closeModal(); if (GW.currentScreen() !== 'home') GW.show('home'); }
+  hiddenAt = 0;
+});
 window.claude?.hot?.snapshot?.(() => ({screen: GW.currentScreen(), game: GW.snapshotGame ? GW.snapshotGame() : null}));
 function boot(data){
   const pack = GW.autoPack();
@@ -13762,7 +13840,7 @@ function boot(data){
   let live = null;
   try { live = JSON.parse(localStorage.getItem('gw-live') || 'null'); } catch (_) {}
   if (live && Array.isArray(live.moves) && live.moves.length && profile.onboarded){
-    try { GW.restoreGame(live); GW.toast('<b>Welcome back</b><br>Your game was saved where you left it.'); return; } catch (_) {}
+    try { GW.restoreGame(live); setTimeout(() => GW.toast('<b>Your game is saved</b><br>Tap Continue game to carry on.'), 600); } catch (_) {}
   }
   GW.show('home');
   const next = () => { if (!profile.onboarded) setTimeout(onboarding, 300); else GW.show('home'); };

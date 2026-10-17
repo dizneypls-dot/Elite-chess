@@ -116,7 +116,24 @@ $('cvcB').addEventListener('click', e => { const b = e.target.closest('.tile'); 
 $('sides').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ setup.side = b.dataset.v; renderSetup(); } });
 $('tcGrid').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ setup.tc = b.dataset.v; renderSetup(); } });
 $('ratedBtn').addEventListener('click', () => { setup.rated = !setup.rated; renderSetup(); });
-$('playBtn').addEventListener('click', () => startGame(configFromSetup()));
+// Starting a new game while one is unfinished: continue it, or resign it (a rated game counts as a loss) and start
+$('playBtn').addEventListener('click', () => {
+  const g = G;
+  if (!g || g.over || !g.hist.length || g.mode === 'online') return startGame(configFromSetup());
+  const ratedCpu = g.rated && g.mode === 'cpu';
+  const m = GW.modal(`<h2>Game in progress</h2><div class="sub">You have an unfinished game${ratedCpu ? ' (rated)' : ''}.</div>
+    <div class="stack"><button class="btn pop big" id="gpCont" type="button">Continue that game</button>
+      <button class="btn" id="gpNew" type="button">${ratedCpu ? 'Resign it and start the new game' : 'Start the new game'}</button>
+      ${ratedCpu ? '<div class="muted small">Resigning counts as a loss for your rating.</div>' : ''}
+      <button class="btn ghost" id="gpCancel" type="button">Cancel</button></div>`);
+  m.querySelector('#gpCont').addEventListener('click', () => { GW.closeModal(); GW.show('game'); });
+  m.querySelector('#gpCancel').addEventListener('click', () => GW.closeModal());
+  m.querySelector('#gpNew').addEventListener('click', () => {
+    GW.closeModal();
+    if (ratedCpu){ g.resigned = g.human; ui.away = false; renderGame(); }
+    startGame(configFromSetup());
+  });
+});
 Engine.onStatus(() => { if (GW.currentScreen() === 'setup') renderSetup(); if (G) renderGame(); });
 /* ---------- Online: find a game ---------- */
 function renderOnline(){
@@ -206,7 +223,7 @@ $('scr-game').innerHTML = `
 </div>`;
 
 let G = null;
-const ui = {thinking:false, paused:false, flipped:false, view:null, lastChat:null};
+const ui = {thinking:false, paused:false, away:false, flipped:false, view:null, lastChat:null};
 let thinkToken = 0, turnStart = now();
 const cur = () => G.states[G.states.length - 1];
 const gameBoard = new Board($('gameBoard'), {canMove: () => humanCanMove(), onMove: (m, dragged) => doMove(m, dragged),
@@ -260,7 +277,7 @@ function startGame(cfg){
         assisted:false, tookBack:false});
   turnStart = now();
   Engine.newGame();
-  Object.assign(ui, {thinking:false, paused:false, flipped: cfg.human === 'b', view:null});
+  Object.assign(ui, {thinking:false, paused:false, away:false, flipped: cfg.human === 'b', view:null});
   gameBoard.premove = null;
   if (Object.values(cfg.bots).some(k => k != null && D.BOTS[k].sf)) Engine.boot();
   G.chat = cfg.mode === 'cpu' ? D.BOTS[cfg.bots[opp(cfg.human)]].greet : '';
@@ -295,7 +312,7 @@ function gameStatus(){
 }
 
 /* Clocks: G.times[k] holds both players' remaining ms when position k began; the side to move's clock runs from turnStart */
-const clockRunning = () => !!(G && G.tcObj && G.hist.length > 0 && !G.over && !ui.paused);
+const clockRunning = () => !!(G && G.tcObj && G.hist.length > 0 && !G.over && !ui.paused && !ui.away);
 function clockLeft(c){
   const t = G.times[G.times.length - 1][c];
   return clockRunning() && cur().turn === c ? t - (now() - turnStart) : t;
@@ -446,7 +463,7 @@ async function hint(){
   renderGame();
 }
 
-const cpuToMove = () => G && !G.over && !ui.paused && G.bots[cur().turn] != null;
+const cpuToMove = () => G && !G.over && !ui.paused && !ui.away && G.bots[cur().turn] != null;
 const humanCanMove = () => G && ui.view == null && (G.mode !== 'online' || cur().turn === G.human) && !ui.thinking && !G.over && !ui.paused && G.bots[cur().turn] == null && GW.currentScreen() === 'game';
 
 async function maybeCpu(){
@@ -799,7 +816,20 @@ $('drawBtn').addEventListener('click', async () => {
   renderGame();
 });
 $('reviewNowBtn').addEventListener('click', () => startReview(G));
-GW.register('game', {onShow: () => { if (G){ syncBoard(null); renderGame(); maybeCpu(); } }});
+// Leaving the game screen pauses a game against bots (clocks and thinking stop) until you come back;
+// an online game can't wait, so it keeps going and says so
+GW.register('game', {
+  onShow: () => { if (G){ if (ui.away){ ui.away = false; turnStart = now(); } syncBoard(null); renderGame(); maybeCpu(); } },
+  onHide: () => {
+    if (!G || G.over) return;
+    if (G.mode === 'online'){ GW.toast('<b>Your online game is still running</b><br>Tap Play to go back to it.'); return; }
+    if (!ui.away){
+      if (clockRunning()) G.times[G.times.length - 1][cur().turn] = clockLeft(cur().turn);
+      ui.away = true; ui.thinking = false; thinkToken++;
+      persistGame();
+    }
+  }
+});
 
 /* ============================== GAME REVIEW ============================== */
 $('scr-review').innerHTML = `

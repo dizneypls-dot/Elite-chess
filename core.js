@@ -1072,11 +1072,27 @@ let current = null;
 const NAV_OF = {history:'history', home:'home', setup:'play', game:'play', review:'play', cups:'cups', puzzles:'puzzles', learn:'learn', lesson:'learn',
                 openings:'openings', analysis:'analysis', profile:'profile', world:'world', legends:'legends', customize:'customize'};
 function register(name, def){ screens[name] = def; }
+// On the website, the browser's (and phone's) Back follows the app's screens instead of leaving the site.
+// Inside Claude and in the Android app, Back is handled by the host, so the address is left alone.
+let goingBack = false;
+const webHistory = !(window.claude && typeof window.claude.use === 'function') && !window.EliteApp && /^https?:$/.test(location.protocol);
+let fromPop = false;
+if (webHistory) addEventListener('popstate', e => {
+  if (document.getElementById('modal')){ closeModal(); try { history.pushState({gw: current}, '', '#' + current); } catch (_) {} return; }
+  const target = e.state && e.state.gw;
+  fromPop = true; goingBack = true;
+  try { show(target && screens[target] ? target : 'home'); } finally { fromPop = false; goingBack = false; }
+});
+// Screens visited, so Back retraces your steps (Home clears the trail)
+const trail = [];
 function show(name, arg){
   const def = screens[name];
   if (!def) return;
   if (current && screens[current].onHide) screens[current].onHide();
+  if (name === 'home') trail.length = 0;
+  else if (!goingBack && current && current !== name){ trail.push(current); if (trail.length > 30) trail.shift(); }
   current = name;
+  if (webHistory && !fromPop){ try { history[name === 'home' && !history.state ? 'replaceState' : 'pushState']({gw: name}, '', '#' + name); } catch (_) {} }
   for (const sec of document.querySelectorAll('.screen')) sec.hidden = sec.id !== 'scr-' + name;
   document.querySelectorAll('.nav').forEach(b => { if (b.dataset.nav === NAV_OF[name]) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   document.body.dataset.screen = name;
@@ -1085,6 +1101,31 @@ function show(name, arg){
   window.scrollTo(0, 0);
 }
 const currentScreen = () => current;
+// Back: the previous screen, else Home; returns 'home-root' when already on Home with nowhere to go
+function back(){
+  while (trail.length){
+    const prev = trail.pop();
+    if (prev !== current && screens[prev]){ goingBack = true; try { show(prev); } finally { goingBack = false; } return 'back'; }
+  }
+  if (current !== 'home'){ show('home'); return 'home'; }
+  return 'home-root';
+}
+// Leaving the app: only the Android app can close itself (it provides window.EliteApp)
+const canExit = () => !!(window.EliteApp && window.EliteApp.exit);
+function confirmExit(){
+  if (!canExit()) return;
+  const m = modal(`<h2>Leave Elite Chess?</h2><div class="sub">Your progress is saved${window.GW && GW.currentGame && GW.currentGame() && !GW.currentGame().over ? ', and your game will be waiting on Home' : ''}.</div>
+    <div class="row"><button class="btn grow" id="exStay" type="button">Stay</button><button class="btn pop grow" id="exGo" type="button">Exit</button></div>`);
+  m.querySelector('#exStay').addEventListener('click', () => closeModal());
+  m.querySelector('#exGo').addEventListener('click', () => { closeModal(); try { window.EliteApp.exit(); } catch (_) {} });
+}
+// The phone's Back button (Android app): close a window, then step back, then offer to leave
+function hardwareBack(){
+  if (document.getElementById('modal')){ closeModal(); return 'ok'; }
+  if (document.getElementById('landing')) return 'exit';
+  if (back() === 'home-root') confirmExit();
+  return 'ok';
+}
 
 function barHTML(who, color, extra = {}){
   return `<div class="av">${avatarSVG(who, extra.mood || (extra.think ? 'think' : ''))}</div><div class="pinfo"><div class="pname">${esc(who.name)}${who.elo ? `<span class="elo">(${who.elo})</span>` : ''}</div>` +
@@ -1109,6 +1150,6 @@ window.GW = {
   pieceSets, pieceImg, applyPack, autoPack, currentPack, ownLook, restoreOwnLook, flyNow, scheduleFly, SOUND_PACKS, PIECE_KEYS,
   profile, saveProfile, me, unlock, markDay, dayStreak, buzz, levelOf, xpForLevel, dailyGoals, addXP, track, rateGame, recordResult, toast, modal, closeModal, sfx, moveKind,
   openingName, BOOK_PREFIX, OPEN_BY_LINE, THEME_LABEL, BANK, pickPuzzle, bankSpec, classicSpec, CLS, clsIcon, clsSVG,
-  ARROW, slidesFor, Board, miniBoard, engineBest, engineDepth, Task, register, show, currentScreen, barHTML
+  ARROW, slidesFor, Board, miniBoard, engineBest, engineDepth, Task, register, show, currentScreen, barHTML, back, canExit, confirmExit, hardwareBack
 };
 })();

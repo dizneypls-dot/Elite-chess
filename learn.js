@@ -777,7 +777,7 @@ function openSettings(){
     <div class="stack"><div class="label">Your progress</div>
       <div class="muted small">Progress is saved on this device. Copy a backup code to move it to a new phone or browser.</div>
       <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div></div>
-    <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span><button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
+    <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span>${GW.canExit() ? '<button class="btn" id="stExit" type="button">Exit app</button>' : ''}<button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => {
     const t = e.target.closest('.theme'), o = e.target.closest('[data-opt]'), lk = e.target.closest('[data-look]');
     if (lk){ s.appearance = lk.dataset.look; GW.applySettings(); m.querySelectorAll('[data-look]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.look === s.appearance))); }
@@ -785,6 +785,7 @@ function openSettings(){
     if (o){ s[o.dataset.opt] = !s[o.dataset.opt]; o.setAttribute('aria-pressed', String(s[o.dataset.opt])); GW.applySettings(); if (o.dataset.opt === 'sound' && s.sound){ sfx.unlock(); sfx.forMove('move', true); } }
   });
   m.querySelector('#stDone').addEventListener('click', () => GW.closeModal());
+  m.querySelector('#stExit')?.addEventListener('click', () => { GW.closeModal(); GW.confirmExit(); });
   m.querySelector('#stLookBtn').addEventListener('click', () => { GW.closeModal(); GW.show('customize'); });
   const KEYS = ['gw-profile', 'gw-settings', 'gw-setup', 'gw-archive', 'gw-fav'];
   m.querySelector('#stBackup').addEventListener('click', () => {
@@ -902,9 +903,9 @@ document.querySelector('.rail').addEventListener('click', e => {
   const n = b.dataset.nav;
   if (n === 'settings') return openSettings();
   if (n === 'more'){
-    const items = [['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']];
+    const items = [['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
     const m = GW.modal(`<h2>More</h2><div class="more-grid">${items.map(([k, i, t]) => `<button class="more-item" type="button" data-more="${k}"><span>${i}</span>${t}</button>`).join('')}</div>`);
-    m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else GW.show(x.dataset.more); });
+    m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else if (x.dataset.more === 'exit') GW.confirmExit(); else GW.show(x.dataset.more); });
     return;
   }
   if (n === 'play'){ const g = GW.currentGame(); return GW.show(g && !g.over ? 'game' : 'setup'); }
@@ -912,6 +913,12 @@ document.querySelector('.rail').addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape'){ GW.closeModal(); GW.boards.forEach(b => b.cancelPromo()); } });
 
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){ hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt > 60000 && !document.getElementById('landing')){ GW.closeModal(); if (GW.currentScreen() !== 'home') GW.show('home'); }
+  hiddenAt = 0;
+});
 window.claude?.hot?.snapshot?.(() => ({screen: GW.currentScreen(), game: GW.snapshotGame ? GW.snapshotGame() : null}));
 function boot(data){
   const pack = GW.autoPack();
@@ -922,7 +929,7 @@ function boot(data){
   let live = null;
   try { live = JSON.parse(localStorage.getItem('gw-live') || 'null'); } catch (_) {}
   if (live && Array.isArray(live.moves) && live.moves.length && profile.onboarded){
-    try { GW.restoreGame(live); GW.toast('<b>Welcome back</b><br>Your game was saved where you left it.'); return; } catch (_) {}
+    try { GW.restoreGame(live); setTimeout(() => GW.toast('<b>Your game is saved</b><br>Tap Continue game to carry on.'), 600); } catch (_) {}
   }
   GW.show('home');
   const next = () => { if (!profile.onboarded) setTimeout(onboarding, 300); else GW.show('home'); };
