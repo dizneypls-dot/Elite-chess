@@ -1,4 +1,4 @@
-/* Greenwood Chess styles: board themes, piece colourways, seasons and holiday packs.
+/* Elite Chess styles: board themes, piece colourways, seasons and holiday packs.
    Boards: l / d are CSS backgrounds for light and dark squares, bg is what sits under the squares (textures),
    cl / cd colour the coordinates on light / dark squares. Colourways recolour any piece set by brightness. */
 (() => {
@@ -34,7 +34,7 @@ const M = {
 const withMotif = (key, color, base, op) => `${motif(M[key], color, op)}, ${base}`;
 
 const THEMES = [
-  // Your originals: the boards Greenwood Chess started with, unchanged
+  // Your originals: the boards the app started with, unchanged
   {id:'greenwood', group:'Your originals', name:'Greenwood', l:'#e9eedd', d:'#5b8d7a'},
   {id:'glass',     group:'Your originals', name:'Glass',     l:'rgba(255,255,255,.55)', d:'rgba(255,255,255,.14)', glass:true, bg:'linear-gradient(135deg,#7f6cf2,#3fb8c9)'},
   {id:'midnight',  group:'Your originals', name:'Midnight',  l:'rgba(205,210,255,.42)', d:'rgba(40,40,110,.42)', glass:true, bg:'linear-gradient(135deg,#1d1b4f,#4b2a7b)'},

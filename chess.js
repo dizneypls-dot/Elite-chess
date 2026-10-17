@@ -1,4 +1,4 @@
-/* Greenwood Chess: rules, notation, a small built-in search, a mate solver and a Stockfish wrapper.
+/* Elite Chess: rules, notation, a small built-in search, a mate solver and a Stockfish wrapper.
    Squares are 0..63 with 0 = a8 and 63 = h1. Pieces are strings like 'wK' or 'bP'. */
 (() => {
 const FILES = 'abcdefgh';

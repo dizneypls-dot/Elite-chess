@@ -1,4 +1,4 @@
-/* Greenwood Chess: World (FIDE rankings, events, the title match) and Legends (the story of chess, champions,
+/* Elite Chess: World (FIDE rankings, events, the title match) and Legends (the story of chess, champions,
    famous games with a move-by-move viewer). Rankings and events prefer the live copy in the artifact database. */
 (() => {
 const GW = window.GW, W = window.GW_WORLD;

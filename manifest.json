@@ -1,6 +1,6 @@
 {
-  "name": "Greenwood Chess",
-  "short_name": "Greenwood",
+  "name": "Elite Chess",
+  "short_name": "Elite Chess",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

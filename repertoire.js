@@ -1,4 +1,4 @@
-/* Greenwood Chess: a curated repertoire of the best openings, with ideas, plans and classic traps.
+/* Elite Chess: a curated repertoire of the best openings, with ideas, plans and classic traps.
    Lines are SAN move text from the start; every line is checked against the rules engine when the app loads. */
 (() => {
 const R = [

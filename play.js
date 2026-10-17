@@ -1,4 +1,4 @@
-/* Greenwood Chess: play menu, games against bots and friends, rating, game review and cups. */
+/* Elite Chess: play menu, games against bots and friends, rating, game review and cups. */
 (() => {
 const GW = window.GW;
 const {C, D, $, esc, sleep, now, NAME, PIECE_NAME, avatarSVG, sfx, moveKind, Board, slidesFor, barHTML, profile, store} = GW;
@@ -126,7 +126,7 @@ function renderOnline(){
   const busy = ['searching', 'hosting', 'joining'].includes(st.state);
   if (st.state === 'hosting' && st.code){
     box.innerHTML = `<div class="ol-card"><div class="label">Your game code</div><div class="ol-code" aria-label="Game code ${st.code.split('').join(' ')}">${st.code}</div>
-      <div class="muted small">Send this code to your friend. They open Greenwood Chess → Play → Online and enter it. Time: ${esc(tc)}.</div>
+      <div class="muted small">Send this code to your friend. They open Elite Chess → Play → Online and enter it. Time: ${esc(tc)}.</div>
       <div class="ol-status"><span class="spin" aria-hidden="true"></span>${esc(st.note)}</div>
       <div class="row"><button class="btn violet grow" id="olCopy" type="button">Copy code</button><button class="btn grow" id="olCancel" type="button">Cancel</button></div></div>`;
   } else if (busy){
@@ -690,7 +690,7 @@ GW.archivedPGN = g => {
   let s = C.initState(); const ms = [];
   for (const u of g.moves){ const m = fromUci(s, u); if (!m) break; ms.push(m); s = apply(s, m); }
   const p = c => playerOf(g, c).name;
-  return C.toPGN(ms, {Event:'Greenwood Chess', Date:new Date(g.t).toISOString().slice(0, 10).replace(/-/g, '.'), White:p('w'), Black:p('b'), Result:g.result.replace('–', '-').replace('½', '1/2').replace('½', '1/2')});
+  return C.toPGN(ms, {Event:'Elite Chess', Date:new Date(g.t).toISOString().slice(0, 10).replace(/-/g, '.'), White:p('w'), Black:p('b'), Result:g.result.replace('–', '-').replace('½', '1/2').replace('½', '1/2')});
 };
 GW.playerOf = playerOf;
 
@@ -1156,7 +1156,7 @@ $('rvNew').addEventListener('click', () => { reviewToken++; R = null; GW.show('s
 $('rvAnalyse').addEventListener('click', () => { if (R) GW.show('analysis', {moves: R.hist.map(h => h.m), ply: R.ply}); });
 $('rvPgn').addEventListener('click', () => {
   if (!R) return;
-  const pgn = C.toPGN(R.hist.map(h => h.m), {Event:'Greenwood Chess', White:R.players.w.name, Black:R.players.b.name});
+  const pgn = C.toPGN(R.hist.map(h => h.m), {Event:'Elite Chess', White:R.players.w.name, Black:R.players.b.name});
   GW.copyText(pgn, 'PGN copied');
 });
 document.addEventListener('keydown', e => {

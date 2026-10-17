@@ -1,4 +1,4 @@
-/* Greenwood Chess learning content: courses, lessons, the book library and opening guides.
+/* Elite Chess learning content: courses, lessons, the book library and opening guides.
    All explanations are original writing. Puzzle drills draw from the lichess puzzle bank (CC0).
    Step types:
      info     {text, fen?, arrows?, marks?}            read and continue

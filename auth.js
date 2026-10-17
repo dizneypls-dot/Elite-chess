@@ -1,4 +1,4 @@
-/* Greenwood Chess: the front page, sign-in and cloud save.
+/* Elite Chess: the front page, sign-in and cloud save.
    - Claude account: inside Claude the page knows who is viewing; progress syncs to the artifact database
      (each player's own private data/users/<id>/save document), so it follows you to any device.
    - Email: profiles kept on this device (several people can share one phone or tablet), password-protected
@@ -126,12 +126,12 @@ function landing({onDone} = {}){
   el.id = 'landing';
   el.className = 'landing';
   el.setAttribute('role', 'dialog');
-  el.setAttribute('aria-label', 'Welcome to Greenwood Chess');
+  el.setAttribute('aria-label', 'Welcome to Elite Chess');
   const accts = acctStore().list;
   el.innerHTML = `
   <div class="ld-wrap">
     <section class="ld-hero">
-      <div class="ld-brand"><div class="ld-logo">${document.querySelector('.logo img, .logo svg')?.outerHTML || ''}</div><span>Greenwood<b>Chess</b></span></div>
+      <div class="ld-brand"><div class="ld-logo">${document.querySelector('.logo img, .logo svg')?.outerHTML || ''}</div><span>Elite<b>Chess</b></span></div>
       <h1>Chess that feels <em>alive</em>.</h1>
       <p class="ld-sub">Play characters with real personalities, solve puzzles, follow the world’s best players and learn from the legends. Free, no adverts.</p>
       <div class="ld-board"><div class="ld-mini" id="ldMini"></div><div class="ld-cap" id="ldCap">The Opera Game · Morphy, 1858</div></div>

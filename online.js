@@ -1,4 +1,4 @@
-/* Greenwood Chess: online play.
+/* Elite Chess: online play.
    Inside Claude, games run through the artifact's live room: everyone who has the app open is in one lobby,
    each game gets its own named room, and each player's messages travel in their room presence as a short
    numbered log (so a dropped update never loses a move).

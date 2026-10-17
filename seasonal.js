@@ -1,4 +1,4 @@
-/* Greenwood Chess: seasonal character pieces and animated flyovers.
+/* Elite Chess: seasonal character pieces and animated flyovers.
    Each holiday and season has its own set where every piece stays recognisable by role and height:
    pawn small and round, rook squat and flat-topped, bishop tall and pointed, knight an animal head,
    queen tall and crowned, king tallest. White pieces are light, black pieces deep, theme colours are accents.
@@ -320,7 +320,7 @@ for (const [id, S] of Object.entries(SETS)){
     if (sp) body += sparkles(sp[0], sp[1]);
     svg[side + k] = wrap(shadeGradients(g.slice(0, cut) + body));
   }
-  sets['th-' + id] = {name: S.name, author: 'Greenwood Chess', license: 'original', themed: true, animated: true, pack: id, svg};
+  sets['th-' + id] = {name: S.name, author: 'Elite Chess', license: 'original', themed: true, animated: true, pack: id, svg};
 }
 window.GW_SEASONAL = {SETS, FLY};
 })();

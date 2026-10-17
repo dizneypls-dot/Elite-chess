@@ -1,4 +1,4 @@
-/* Greenwood Chess: Customize. Seasonal and holiday packs, boards, piece sets, colourways, sounds and effects,
+/* Elite Chess: Customize. Seasonal and holiday packs, boards, piece sets, colourways, sounds and effects,
    all previewed on a live board. */
 (() => {
 const GW = window.GW;

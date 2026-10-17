@@ -1,4 +1,4 @@
-/* Greenwood Chess core: helpers, settings, sound, profile and rating, the board component, tasks and screens.
+/* Elite Chess core: helpers, settings, sound, profile and rating, the board component, tasks and screens.
    Everything shared lives on window.GW; play.js and learn.js add their screens to it. */
 (() => {
 const C = window.Chess, D = window.GW_DATA, LRN = window.GW_LEARN;

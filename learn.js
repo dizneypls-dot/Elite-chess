@@ -1,4 +1,4 @@
-/* Greenwood Chess: home, puzzles, courses and lessons, library, opening explorer, analysis board, profile, settings. */
+/* Elite Chess: home, puzzles, courses and lessons, library, opening explorer, analysis board, profile, settings. */
 (() => {
 const GW = window.GW;
 const {C, D, LRN, $, esc, sleep, NAME, avatarSVG, sfx, moveKind, Board, slidesFor, profile, saveProfile, Task, clamp, ICON} = GW;
@@ -673,7 +673,7 @@ $('anUndo').addEventListener('click', () => { if (AN.ply){ AN.moves = AN.moves.s
 $('anClear').addEventListener('click', () => { AN.startFen = C.START_FEN; AN.moves = []; AN.ply = 0; syncAn(null); });
 $('anExport').addEventListener('click', () => {
   if (AN.startFen !== C.START_FEN) return GW.copyText(`[FEN "${AN.startFen}"]\n\n` + AN.moves.map(m => uci(m)).join(' '), 'Copied');
-  GW.copyText(C.toPGN(AN.moves, {Event:'Greenwood Chess analysis'}), 'PGN copied');
+  GW.copyText(C.toPGN(AN.moves, {Event:'Elite Chess analysis'}), 'PGN copied');
 });
 $('anFen').addEventListener('click', () => GW.copyText(C.toFEN(anState()), 'FEN copied'));
 $('anImport').addEventListener('click', () => {
@@ -738,7 +738,7 @@ function renderProfile(){
       <div class="panel"><h2>About and credits</h2><div class="muted small credits">
         <p>Piece sets: ${Object.values(GW.pieceSets()).filter(p => !p.themed).map(p => `${esc(p.name)} by ${esc(p.author)} (${esc(p.license)})`).join('; ')}. From the <a href="https://github.com/lichess-org/lila/blob/master/COPYING.md" target="_blank" rel="noopener">lichess.org collection</a>.</p>
         <p>Puzzles and opening names: <a href="https://database.lichess.org" target="_blank" rel="noopener">lichess.org open databases</a> (CC0). Engine: <a href="https://stockfishchess.org" target="_blank" rel="noopener">Stockfish 17.1</a> via <a href="https://github.com/nmrugg/stockfish.js" target="_blank" rel="noopener">stockfish.js</a> (GPLv3), with Stockfish 10 as a fallback for older browsers. Bots rated 1350 and up play at Stockfish’s calibrated strength (UCI_Elo).</p>
-        <p>World rankings: <a href="https://ratings.fide.com" target="_blank" rel="noopener">FIDE ratings</a>. Recorded sounds: public-domain (CC0) recordings from <a href="https://freesound.org" target="_blank" rel="noopener">freesound.org</a> by Amatsuuu, simone_ds, JJTaynos and mh2o. Characters, seasonal character pieces and flyovers, boards, themes and lessons are original to Greenwood Chess. Bot ratings and performance estimates are approximate.</p></div></div>
+        <p>World rankings: <a href="https://ratings.fide.com" target="_blank" rel="noopener">FIDE ratings</a>. Recorded sounds: public-domain (CC0) recordings from <a href="https://freesound.org" target="_blank" rel="noopener">freesound.org</a> by Amatsuuu, simone_ds, JJTaynos and mh2o. Characters, seasonal character pieces and flyovers, boards, themes and lessons are original to Elite Chess. Bot ratings and performance estimates are approximate.</p></div></div>
     </section>
   </div>`;
 }
@@ -802,7 +802,7 @@ function openSettings(){
       const raw = r.querySelector('#rsCode').value.trim(), err = r.querySelector('#rsErr');
       let data = null;
       try { if (raw.startsWith('GWC1:')) data = JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))); } catch (_) {}
-      if (!data || !data['gw-profile']){ err.hidden = false; err.innerHTML = '<span class="ic">!</span><div>That doesn’t look like a Greenwood backup code. Copy the whole code, starting with GWC1:</div>'; return; }
+      if (!data || !data['gw-profile']){ err.hidden = false; err.innerHTML = '<span class="ic">!</span><div>That doesn’t look like an Elite Chess backup code. Copy the whole code, starting with GWC1:</div>'; return; }
       try { for (const k of KEYS){ if (data[k]) localStorage.setItem(k, JSON.stringify(data[k])); else localStorage.removeItem(k); } localStorage.removeItem('gw-live'); } catch (_) {}
       location.reload();
     });
@@ -820,7 +820,7 @@ function onboarding(){
   let lvl = 1;
   const looks = [D.PEOPLE.you.look, D.BOTS[2].look, D.BOTS[6].look, D.BOTS[10].look, D.BOTS[4].look, D.BOTS[13].look];
   let look = 0;
-  const m = GW.modal(`<div class="onboard"><div class="ob-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lgOb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6c5ce7"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22b8b0"/></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#lgOb)"/><path d="M20 6l3 4h-6zM15 11h10l-2 3h-6zM17 15h6l1.5 10h-9zM12 27h16v3H12zM10 31h20v3H10z" fill="#fff"/><circle cx="30" cy="10" r="3" fill="#ffb627"/></svg></div><h2>Welcome to Greenwood Chess</h2><div class="sub">Play bots, win cups, solve puzzles and learn from first moves to grandmaster technique.</div>
+  const m = GW.modal(`<div class="onboard"><div class="ob-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lgOb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6c5ce7"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22b8b0"/></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#lgOb)"/><path d="M20 6l3 4h-6zM15 11h10l-2 3h-6zM17 15h6l1.5 10h-9zM12 27h16v3H12zM10 31h20v3H10z" fill="#fff"/><circle cx="30" cy="10" r="3" fill="#ffb627"/></svg></div><h2>Welcome to Elite Chess</h2><div class="sub">Play bots, win cups, solve puzzles and learn from first moves to grandmaster technique.</div>
     <input class="search" id="obName" maxlength="20" placeholder="What should we call you?" value="${esc(profile.name || '')}">
     <div class="label">Pick an avatar (you can customise it later)</div><div class="ob-looks">${looks.map((l, i) => `<button type="button" data-look="${i}" aria-pressed="${i === 0}"><div class="av">${D.avatar(l)}</div></button>`).join('')}</div>
     <div class="label">How well do you play?</div><div class="ob-levels">${levels.map(([n, r], i) => `<button type="button" data-lvl="${i}" aria-pressed="${i === lvl}"><b>${n}</b><span>${r}</span></button>`).join('')}</div>
