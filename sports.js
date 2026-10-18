@@ -155,7 +155,7 @@ function build(){
           const done = sess.filter(s => s.status === 'FINISHED'), next = sess.find(s => s.status === 'NOT-STARTED' && s.date > now - H);
           const start = Date.parse(e.start), end = Date.parse(e.end) + DAY;
           const state = live ? 'in' : done.length && next ? 'weekend' : done.length ? 'post' : 'pre';
-          if (!relevant(state === 'weekend' ? 'in' : state, next ? next.date : start, f.lead, end)) { if (state === 'pre' && start > now && !later.some(x => x.id === 'motogp')) later.push({id:f.id, icon:f.icon, sport:f.name, title:e.name, date:start}); continue; }
+          if (!relevant(state === 'weekend' ? 'in' : state, next ? next.date : start, f.lead, end)) { if (state === 'pre' && start > now && !later.some(x => x.id === 'motogp')) later.push({id:f.id, icon:f.icon, sport:f.name, title:titleCase(e.name), date:start}); continue; }
           const last = done.filter(s => s.rows.length).pop();
           cards.push({id:f.id, icon:f.icon, sport:f.name, title:titleCase(e.name), sub:e.circuit, kind:'race', state, date:(live || next || last || sess[0] || {date:start}).date,
             live: live && {label:live.label, rows:live.rows, status:'Live'}, last: last && {label:last.label, rows:last.rows, status:'Final'}, next, sessions:sess.map(({label, date, status}) => ({label, date, state:status === 'FINISHED' ? 'post' : 'pre'})), delayed:true});
