@@ -1,7 +1,7 @@
 """MotoGP schedule and results for the app's Sport screen, written to sports/motogp.json on the website.
 MotoGP's results service only answers servers (not web pages), so a scheduled GitHub workflow runs this every
 15 minutes on race weekends and once a day otherwise. usage: python3 tools/motogp.py OUT.json"""
-import json, sys, urllib.request, datetime
+import json, os, sys, urllib.request, datetime
 
 API = 'https://api.motogp.pulselive.com/motogp/v1/results'
 LABEL = {'FP': 'Practice', 'PR': 'Practice', 'Q': 'Qualifying', 'SPR': 'Sprint', 'WUP': 'Warm Up', 'RAC': 'Race'}
@@ -61,6 +61,7 @@ def main(out):
     # only rewrite when something changed, so quiet days add no commits
     if {k: v for k, v in old.items() if k != 'updated'} != data:
         data['updated'] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
+        os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
         json.dump(data, open(out, 'w'), separators=(',', ':'))
         print('updated', out)
     else:
