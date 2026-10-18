@@ -786,6 +786,7 @@ function openSettings(){
     <div class="stack"><div class="label">Your progress</div>
       <div class="muted small">Progress is saved on this device. Copy a backup code to move it to a new phone or browser.</div>
       <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div>
+      ${window.EliteApp && window.EliteApp.info ? (() => { const a = appInfo() || {}; return `<div class="row" style="justify-content:space-between;gap:10px;font-weight:600"><span>App version ${esc(a.app || '')}<small class="muted" style="display:block;font-weight:500">${a.time ? 'Content from ' + new Date(a.time * 1000).toLocaleDateString() + ' · updates itself from elitechess.online' : 'Updates itself from elitechess.online'}</small></span><button class="btn" type="button" id="stUpd">Check for updates</button></div>`; })() : ''}
       ${GW.openSync && GW.P2P && GW.P2P.supported() ? '<button class="btn violet big-row" id="stSync" type="button"><span class="grow" style="text-align:left">🔗 Linked devices: sync the Android app and elitechess.online</span><span>›</span></button>' : ''}</div>
     <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span>${GW.canExit() ? '<button class="btn" id="stExit" type="button">Exit app</button>' : ''}<button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => {
@@ -798,6 +799,7 @@ function openSettings(){
   m.querySelector('#stExit')?.addEventListener('click', () => { GW.closeModal(); GW.confirmExit(); });
   m.querySelector('#stLookBtn').addEventListener('click', () => { GW.closeModal(); GW.show('customize'); });
   m.querySelector('#stSync')?.addEventListener('click', () => { GW.closeModal(); GW.openSync(); });
+  m.querySelector('#stUpd')?.addEventListener('click', () => { try { window.EliteApp.checkUpdate(); } catch (_) {} });
   const KEYS = ['gw-profile', 'gw-settings', 'gw-setup', 'gw-archive', 'gw-fav'];
   m.querySelector('#stBackup').addEventListener('click', () => {
     const data = {};
@@ -949,6 +951,22 @@ function boot(data){
   GW.show('home');
   const next = () => { if (!profile.onboarded) setTimeout(onboarding, 300); else GW.show('home'); };
   if (GW.needsLanding && GW.needsLanding()) GW.landing({onDone: next}); else next();
+  // Android app: tell it this version started properly (it then looks for updates on elitechess.online)
+  try { if (window.EliteApp && window.EliteApp.ready) window.EliteApp.ready(); } catch (_) {}
 }
+/* ---------- Android app updates: the app downloads each new version of elitechess.online by itself ---------- */
+const appInfo = () => { try { return JSON.parse(window.EliteApp.info()); } catch (_) { return null; } };
+GW.appUpdate = (state, detail) => {
+  const msg = {latest:'<b>You have the latest version</b>', failed:'<b>Couldn’t check for updates</b><br>Check your internet connection.',
+    apk:'<b>A new Android app is needed</b><br>Download it from elitechess.online to keep getting updates.', checking:'Checking for updates…', downloading:'<b>Downloading the update…</b>'}[state];
+  if (state !== 'ready'){ if (msg && detail === 'manual') GW.toast(msg); return; }
+  document.getElementById('updBar')?.remove();
+  const bar = document.createElement('div');
+  bar.id = 'updBar'; bar.className = 'upd-bar'; bar.setAttribute('role', 'status');
+  bar.innerHTML = `<span class="grow"><b>Elite Chess has been updated</b><br><span class="small">Restart to use the new version. Your progress is kept.</span></span><button class="btn ghost" type="button" id="updLater">Later</button><button class="btn pop" type="button" id="updGo">Restart</button>`;
+  document.body.appendChild(bar);
+  bar.querySelector('#updLater').addEventListener('click', () => bar.remove());
+  bar.querySelector('#updGo').addEventListener('click', () => { try { window.EliteApp.restart(); } catch (_) { location.reload(); } });
+};
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 })();
