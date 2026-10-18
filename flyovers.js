@@ -392,25 +392,113 @@ const snowOwl = svg('0 0 90 60', rad('owBody', [[0, '#ffffff'], [.8, '#eef2f7'],
    <circle cx="45" cy="22" r="9" fill="url(#owBody)"/><circle cx="41.4" cy="21" r="2.6" fill="#ffd400"/><circle cx="48.6" cy="21" r="2.6" fill="#ffd400"/><circle cx="41.4" cy="21" r="1.3" fill="#111"/><circle cx="48.6" cy="21" r="1.3" fill="#111"/>
    <path d="M44 24.4l1 2.4 1-2.4z" fill="#1f2937"/></g>`);
 
+/* ---------- second characters, so each show can pair two different ones ---------- */
+// Christmas: an angel with a golden trumpet, flying right
+const angelWing = up => up ? 'M0 0C-8-20-30-34-52-30c6 4 8 8 8 12-8 0-14 4-16 10 8 0 12 4 12 8-8 2-12 8-12 14 20 0 44-6 60-14z' : 'M0 0C-12-6-34-4-54 8c6 2 8 6 8 10-8 2-12 8-12 14 8-2 12 0 14 4-6 4-8 10-6 16 18-8 38-22 50-40z';
+const angel = svg('0 0 170 120', lin('agGown', [[0, '#ffffff'], [.6, '#eef2ff'], [1, '#b9c6f0']]) + lin('agWing', [[0, '#ffffff'], [1, '#d8e2ff']]) + rad('agSkin', [[0, '#ffe7d6'], [1, '#f0bfa0']], .4, .35) +
+  lin('agHair', [[0, '#fff0b0'], [1, '#e2b12a']]) + lin('agGold', [[0, '#fff2b0'], [.5, '#f2c14e'], [1, '#a8740c']], 1, 0) + rad('agHalo', [[0, '#fff6c8', .9], [1, '#ffd76a', 0]]),
+  trail(scatter(14, 0, 46, 50, 96, 1.8, 4, 21), ['#fff6c8', '#ffd76a', '#ffffff'], 1.4) +
+  `<g>${bob(-5, 1.4)}
+   <g transform="translate(78 52)"><path d="${angelWing(true)}" fill="url(#agWing)" stroke="#c4cfee" stroke-width=".8">${morph([angelWing(true), angelWing(false), angelWing(true)], .7)}</path>
+     <path d="M-8-8c-10-6-24-8-36-4M-10-2c-12-2-24 0-34 6" stroke="#c4cfee" stroke-width=".8" fill="none"/></g>
+   <path d="M66 56c14-6 30-6 40 2l12 40c-18 8-50 10-74 2 4-14 12-30 22-44z" fill="url(#agGown)">${morph(['M66 56c14-6 30-6 40 2l12 40c-18 8-50 10-74 2 4-14 12-30 22-44z', 'M66 56c14-6 30-6 40 2l10 40c-18 6-48 6-70 0 4-14 10-28 20-42z', 'M66 56c14-6 30-6 40 2l12 40c-18 8-50 10-74 2 4-14 12-30 22-44z'], 1.2)}</path>
+   <path d="M70 66c10 4 24 4 34 0M60 90c16 4 34 4 50 0" stroke="#c4cfee" stroke-width="1" fill="none"/>
+   <path d="M76 58c2-10 12-14 20-10" stroke="url(#agGold)" stroke-width="3" fill="none"/>
+   <ellipse cx="92" cy="22" rx="14" ry="4" fill="none" stroke="url(#agGold)" stroke-width="3"/><ellipse cx="92" cy="22" rx="18" ry="8" fill="url(#agHalo)">${blink(1.6)}</ellipse>
+   <path d="M80 34c0-10 10-14 18-10 6 3 8 10 4 16l-6 6c-8 0-16-4-16-12z" fill="url(#agHair)"/>
+   <circle cx="96" cy="38" r="9" fill="url(#agSkin)"/><path d="M84 32c2 10 0 18-4 24 6-2 10-8 10-16z" fill="url(#agHair)"/>
+   <path d="M99 36q2-1.4 4 0" stroke="#7a4a2a" stroke-width="1" fill="none"/><circle cx="101" cy="42" r="2.4" fill="#ffb3c7" opacity=".6"/>
+   <path d="M100 54c8 2 16 0 22-4" stroke="url(#agSkin)" stroke-width="5" stroke-linecap="round" fill="none"/>
+   <path d="M104 41l40-6v4l-40 4z" fill="url(#agGold)"/><path d="M142 32c8-6 18-6 24 0-6 6-16 8-24 4z" fill="url(#agGold)" stroke="#a8740c" stroke-width=".8"/>
+   ${[[150, 22, 0], [160, 14, .4], [146, 10, .8]].map(([x, y, b]) => `<path d="M${x} ${y}v-8c3 1 5 3 5 6M${x} ${y}a2.4 2 0 1 1-2.4-2" stroke="#ffd76a" stroke-width="1.6" fill="none" opacity="0"><animate attributeName="opacity" values="0;1;0"${rep(1.2, b)}/><animateTransform attributeName="transform" type="translate" values="0 0;6 -10"${rep(1.2, b)}/></path>`).join('')}
+  </g>`);
+// New Year: a champagne bottle pops its cork
+const champagne = svg('0 0 130 170', lin('chGlass', [[0, '#1f5a3a'], [.45, '#0b2e1d'], [.55, '#2f7a52'], [1, '#05160d']], 1, 0) + lin('chFoil', [[0, '#fff2b0'], [.5, '#e8b730'], [1, '#8a5a08']], 1, 0) + lin('chLabel', [[0, '#fffaf0'], [1, '#e8dcc0']]) + rad('chFoam', [[0, '#ffffff'], [1, '#fff3c4', 0]]),
+  `<g transform="rotate(-18 65 120)">
+   <path d="M52 168V96c0-12 6-16 8-24V44h10v28c2 8 8 12 8 24v72z" fill="url(#chGlass)" stroke="#031008" stroke-width="1.4"/>
+   <path d="M56 160V100c0-8 4-14 6-20" stroke="#fff" stroke-opacity=".35" stroke-width="2.4" fill="none"/>
+   <path d="M58 44h14v30H58z" fill="url(#chFoil)"/><path d="M58 60h14" stroke="#8a5a08" stroke-width="1"/>
+   <rect x="54" y="110" width="22" height="30" rx="2" fill="url(#chLabel)"/><path d="M58 120h14M58 126h10" stroke="#a8740c" stroke-width="1.4"/><circle cx="65" cy="133" r="2.6" fill="#c8102e"/>
+   <g><path d="M60 44v-10h10v10z" fill="#d9b277" stroke="#7a4a1a" stroke-width="1"/><path d="M60 36h10" stroke="#7a4a1a"/>
+     <animateTransform attributeName="transform" type="translate" values="0 0;0 0;-6 -70;-10 -90" keyTimes="0;.25;.6;1" dur="2.6s" fill="freeze"/>
+     <animateTransform attributeName="transform" type="rotate" values="0 65 40;0 65 40;-200 65 40" keyTimes="0;.25;1" dur="2.6s" fill="freeze" additive="sum"/></g>
+   <ellipse cx="65" cy="30" rx="16" ry="20" fill="url(#chFoam)" opacity="0"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.25;.4;.9" dur="2.6s" fill="freeze"/><animate attributeName="ry" values="4;4;24;30" keyTimes="0;.25;.5;1" dur="2.6s" fill="freeze"/></ellipse>
+  </g>` + scatter(14, 30, 100, 0, 60, 1.4, 3, 33).map(([x, y, r], i) => `<circle cx="${x}" cy="${y + 40}" r="${r}" fill="${i % 3 ? '#fff6c8' : '#ffd23f'}" opacity="0"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.3;.5;1" dur="2.6s" fill="freeze"/><animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 -40" keyTimes="0;.3;1" dur="2.6s" fill="freeze"/></circle>`).join(''));
+// Lunar New Year: a lion dance, two dancers under the costume
+const lionDance = svg('0 0 210 130', rad('ldHead', [[0, '#ffd23f'], [.5, '#e8401e'], [1, '#8a0a06']], .4, .35) + lin('ldBody', [[0, '#ff5a3a'], [1, '#a30a0a']]) + lin('ldGold', [[0, '#fff2b0'], [1, '#c98a00']]) + lin('ldPants', [[0, '#ffd23f'], [1, '#c98a00']]),
+  `<g>${[[40, 0], [70, .2], [130, .1], [160, .3]].map(([x, b]) => `<g transform="translate(${x} 96)"><path d="M0 0l-4 26M8 0l4 26" stroke="url(#ldPants)" stroke-width="7" stroke-linecap="round"><animate attributeName="d" values="M0 0l-4 26M8 0l4 26;M0 0l4 26M8 0l-4 26;M0 0l-4 26M8 0l4 26"${rep(.5, b)}/></path><path d="M-8 26h8M8 26h8" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/></g>`).join('')}
+   <path d="M20 70c30-20 100-26 140-14l10 40H24z" fill="url(#ldBody)">${morph(['M20 70c30-20 100-26 140-14l10 40H24z', 'M20 66c30-16 100-20 140-10l10 40H24z', 'M20 70c30-20 100-26 140-14l10 40H24z'], .5)}</path>
+   ${[40, 64, 88, 112, 136].map(x => `<path d="M${x} 60c4 8 4 20 0 30" stroke="#ffd23f" stroke-width="2" fill="none" opacity=".7"/>`).join('')}
+   <path d="M20 96c40 6 110 6 150 0" stroke="#fff" stroke-width="5" stroke-dasharray="4 3"/>
+   <path d="M20 70c-10 2-16 10-14 18 6-2 10-6 14-10z" fill="#ffd23f"/>
+   <g>${bob(-6, .5)}<g transform="translate(168 54)">
+     ${Array.from({length: 12}, (_, i) => { const a = -2.6 + i * .42; return `<path d="M${(30 * Math.cos(a)).toFixed(1)} ${(30 * Math.sin(a)).toFixed(1)}l${(10 * Math.cos(a)).toFixed(1)} ${(10 * Math.sin(a)).toFixed(1)}" stroke="#fff" stroke-width="7" stroke-linecap="round"/>`; }).join('')}
+     <circle r="30" fill="url(#ldHead)"/><path d="M-10-34l6-14 6 14z" fill="url(#ldGold)"/><circle cx="0" cy="-20" r="5" fill="#cfe8ff" stroke="url(#ldGold)" stroke-width="2"/>
+     <ellipse cx="-10" cy="-4" rx="9" ry="8" fill="#fff"/><ellipse cx="12" cy="-4" rx="9" ry="8" fill="#fff"/>
+     <circle cx="-8" cy="-3" r="4.4" fill="#1a1a1a"><animate attributeName="r" values="4.4;4.4;.6;4.4" keyTimes="0;.88;.94;1"${rep(3)}/></circle><circle cx="14" cy="-3" r="4.4" fill="#1a1a1a"><animate attributeName="r" values="4.4;4.4;.6;4.4" keyTimes="0;.88;.94;1"${rep(3)}/></circle>
+     <path d="M-20-14c6-6 14-6 18-2M4-16c6-4 14-2 18 4" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+     <path d="M-6 8h22c0 10-6 16-12 16s-10-6-10-16z" fill="#5a0004">${morph(['M-6 8h22c0 10-6 16-12 16s-10-6-10-16z', 'M-6 8h22c0 4-6 6-12 6s-10-2-10-6z', 'M-6 8h22c0 10-6 16-12 16s-10-6-10-16z'], .6)}</path>
+     <path d="M-6 8h22" stroke="#fff" stroke-width="3"/><path d="M-26 8c-6 6-6 14 0 18M28 6c6 6 6 14 0 18" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/></g></g></g>`);
+// St Patrick's: a leprechaun dancing a jig with a gold coin
+const leprechaun = svg('0 0 100 130', lin('lpGreen', [[0, '#3fbf62'], [1, '#14632f']]) + rad('lpSkin', [[0, '#ffe2cc'], [1, '#e9b48f']], .4, .35) + lin('lpBeard', [[0, '#ff8a3a'], [1, '#b8460c']]) + lin('lpGold', [[0, '#fff2b0'], [.5, '#f2c14e'], [1, '#a8740c']]),
+  `<g><animateTransform attributeName="transform" type="rotate" values="-6 50 120;6 50 120;-6 50 120"${rep(.55)}/>
+   <path d="M44 96l-10 22M56 96l12 20" stroke="url(#lpGreen)" stroke-width="8" stroke-linecap="round"><animate attributeName="d" values="M44 96l-10 22M56 96l12 20;M44 96l-4 24M56 96l18 14;M44 96l-10 22M56 96l12 20"${rep(.55)}/></path>
+   <path d="M28 120h12M64 118h12" stroke="#2a1a0a" stroke-width="6" stroke-linecap="round"/><rect x="31" y="116" width="5" height="3" fill="url(#lpGold)"/>
+   <path d="M34 60c0-8 8-12 16-12s16 4 16 12l4 38H30z" fill="url(#lpGreen)"/><path d="M30 80h40" stroke="#1a1a1a" stroke-width="4"/><rect x="45" y="77" width="10" height="7" rx="1" fill="none" stroke="url(#lpGold)" stroke-width="2"/>
+   <path d="M34 62c-8 6-12 14-12 22" stroke="url(#lpGreen)" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="22" cy="86" r="4" fill="url(#lpSkin)"/>
+   <path d="M66 62c8-4 14-12 16-20" stroke="url(#lpGreen)" stroke-width="7" stroke-linecap="round" fill="none"/>
+   <g>${turn([0, 30, 0], 84, 34, .8)}<ellipse cx="84" cy="34" rx="7" ry="7" fill="url(#lpGold)" stroke="#a8740c"/><text x="84" y="37" font-size="8" font-weight="900" text-anchor="middle" fill="#a8740c" font-family="serif">€</text></g>
+   <circle cx="50" cy="38" r="12" fill="url(#lpSkin)"/>
+   <path d="M38 40c0 14 6 20 12 20s12-6 12-20c-4 4-8 5-12 5s-8-1-12-5z" fill="url(#lpBeard)"/>
+   <circle cx="46" cy="36" r="1.6" fill="#1a1a1a"/><circle cx="54" cy="36" r="1.6" fill="#1a1a1a"/><path d="M46 44q4 3 8 0" stroke="#7a2a0a" stroke-width="1.4" fill="none"/>
+   <circle cx="42" cy="40" r="2.6" fill="#ff9b9b" opacity=".6"/><circle cx="58" cy="40" r="2.6" fill="#ff9b9b" opacity=".6"/>
+   <path d="M60 46l12 2v4l-12-2z" fill="#7a4a1a"/><path d="M72 46c2-4 6-4 6 0v6h-6z" fill="#7a4a1a"/><circle cx="76" cy="38" r="3" fill="#e5e7eb" opacity="0">${blink(1.4)}<animateTransform attributeName="transform" type="translate" values="0 0;3 -10"${rep(1.4)}/></circle>
+   <path d="M30 28h40" stroke="#14632f" stroke-width="5" stroke-linecap="round"/><path d="M38 28l2-22h20l2 22z" fill="url(#lpGreen)"/><path d="M39 22h22" stroke="#1a1a1a" stroke-width="4"/><rect x="46" y="18" width="8" height="7" fill="none" stroke="url(#lpGold)" stroke-width="1.8"/>
+   ${[0, 120, 240].map(a => `<path d="M0 0c-3-3-3-6 0-6s3 3 0 6z" fill="#22a34a" transform="translate(64 14) rotate(${a})"/>`).join('')}</g>`);
+// Easter: a chick hopping along in half its eggshell
+const chickWing = up => up ? 'M0 0C-6-10-14-12-18-6 -14-4-8-2 0 2z' : 'M0 0C-8 2-14 8-16 14 -10 12-4 8 0 4z';
+const chick = svg('0 0 80 80', rad('ckFluff', [[0, '#fff7b0'], [.6, '#ffd84a'], [1, '#e8a612']], .4, .35) + lin('ckShell', [[0, '#ffffff'], [1, '#e2dccb']]),
+  `<g><ellipse cx="40" cy="48" rx="20" ry="18" fill="url(#ckFluff)"/><circle cx="48" cy="30" r="13" fill="url(#ckFluff)"/>
+   <g transform="translate(34 46)"><path d="${chickWing(true)}" fill="#f5c22a">${morph([chickWing(true), chickWing(false), chickWing(true)], .3)}</path></g>
+   <circle cx="52" cy="28" r="2.4" fill="#2a1a0a"/><circle cx="52.8" cy="27.2" r=".8" fill="#fff"/><path d="M59 31l8 2-8 3z" fill="#ff8a1f"/><circle cx="54" cy="34" r="2.4" fill="#ffb37a" opacity=".6"/>
+   <path d="M36 18l4-8 4 6 4-8 4 7 4-6 2 10c-8 4-16 4-24 0z" fill="url(#ckShell)" stroke="#c9c0a8" stroke-width="1"/>
+   <path d="M34 64l-2 8M44 64l2 8" stroke="#ff8a1f" stroke-width="2.4" stroke-linecap="round"/><path d="M28 72h8M42 72h8" stroke="#ff8a1f" stroke-width="2" stroke-linecap="round"/>
+   <path d="M22 54c-2 4-1 8 2 10 0-4 1-7 4-10z" fill="#f5c22a"/></g>`);
+// Hanukkah: the menorah lights candle by candle
+const menorah = svg('0 0 170 130', lin('mnGold', [[0, '#fff2b0'], [.5, '#e8b730'], [1, '#8a5a08']], 1, 0) + lin('mnCandle', [[0, '#ffffff'], [1, '#9ec5ff']], 1, 0) + rad('mnGlow', [[0, '#fff3b0', .9], [1, '#ffd27a', 0]]),
+  `<path d="M60 124h50l-6-10H66z" fill="url(#mnGold)"/><rect x="82" y="56" width="6" height="58" fill="url(#mnGold)"/>
+   ${[1, 2, 3, 4].map(i => `<path d="M${85 - i * 15} 56C${85 - i * 15} ${70 + i * 8} ${85} ${74 + i * 8} 85 ${70 + i * 8}M${85 + i * 15} 56C${85 + i * 15} ${70 + i * 8} 85 ${74 + i * 8} 85 ${70 + i * 8}" stroke="url(#mnGold)" stroke-width="4" fill="none"/>`).join('')}
+   ${Array.from({length: 9}, (_, i) => { const x = 25 + i * 15 + (i > 4 ? 0 : 0), shamash = i === 4, h = shamash ? 30 : 24, top = shamash ? 22 : 30, start = shamash ? 0 : .3 + [3, 2, 1, 0, 0, 0, 1, 2, 3][i] * .22 + (i > 4 ? .11 : 0);
+     return `<rect x="${x - 4}" y="${top}" width="8" height="${h}" rx="2" fill="url(#mnCandle)" stroke="#5a7ab5" stroke-width=".6"/><path d="M${x - 6} ${top + h}h12" stroke="url(#mnGold)" stroke-width="4"/>
+       <g opacity="0"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;${(start / 3.4).toFixed(3)};${((start + .15) / 3.4).toFixed(3)};1" dur="3.4s" fill="freeze"/><circle cx="${x}" cy="${top - 8}" r="10" fill="url(#mnGlow)"/><path d="M${x} ${top - 14}c4 4 4 9 0 12-4-3-4-8 0-12z" fill="#ffb627"><animateTransform attributeName="transform" type="scale" values="1 1;1 1.1;1 .95;1 1" additive="sum"${rep(.5, i * .07)}/></path></g>`; }).join('')}`);
+// Autumn: a squirrel hopping with an acorn, tail bouncing
+const squirrel = svg('0 0 120 90', rad('sqFur', [[0, '#e0904a'], [.6, '#b0561e'], [1, '#6a2e0a']], .4, .35) + rad('sqTail', [[0, '#f2a660'], [.7, '#b0561e'], [1, '#6a2e0a']], .3, .4) + lin('sqAcorn', [[0, '#c98a4a'], [1, '#7a4a1a']]),
+  `<g><path d="M40 60C14 64 4 40 14 20c8-14 26-14 30 0 4 12-4 20-10 24 8 2 12 10 6 16z" fill="url(#sqTail)">${morph(['M40 60C14 64 4 40 14 20c8-14 26-14 30 0 4 12-4 20-10 24 8 2 12 10 6 16z', 'M40 60C12 60 0 36 12 18c10-12 28-10 30 4 2 12-6 18-12 22 8 2 14 10 10 16z', 'M40 60C14 64 4 40 14 20c8-14 26-14 30 0 4 12-4 20-10 24 8 2 12 10 6 16z'], .55)}</path>
+   <path d="M18 24c6-6 16-6 20 2M14 36c6-2 12 0 16 4" stroke="#ffd2a0" stroke-width="1.4" fill="none" opacity=".6"/>
+   <ellipse cx="62" cy="58" rx="22" ry="16" fill="url(#sqFur)"/><ellipse cx="68" cy="62" rx="10" ry="9" fill="#f6d2a8" opacity=".8"/>
+   <circle cx="84" cy="40" r="13" fill="url(#sqFur)"/><path d="M78 30l2-10 6 8z" fill="#8a3a10"/><circle cx="88" cy="38" r="2.4" fill="#1a0a02"/><circle cx="88.8" cy="37.2" r=".8" fill="#fff"/><circle cx="96" cy="43" r="1.8" fill="#3a1a0a"/>
+   <path d="M80 54c4 4 8 4 10 2" stroke="url(#sqFur)" stroke-width="5" stroke-linecap="round"/><ellipse cx="92" cy="54" rx="5" ry="6" fill="url(#sqAcorn)"/><path d="M87 50c2-4 8-4 10 0z" fill="#5a3a12"/>
+   <path d="M50 72l-4 10M70 72l6 10" stroke="#8a3a10" stroke-width="5" stroke-linecap="round"/></g>`);
+
 /* ---------- the scenes for each theme ---------- */
 const FLY = {
-  christmas: [{motion:'ltr', w:74, dur:8, y:[4, 22], svg:christmas}],
+  christmas: [{motion:'ltr', w:74, dur:8, y:[4, 22], svg:christmas}, {motion:'ltr', w:30, dur:7.5, y:[8, 50], svg:angel}],
   halloween: [
     {motion:'rtl', w:60, dur:7.5, y:[4, 34], svg:witch},
     {motion:'ltr', w:54, dur:7, y:[4, 36], svg:vampire},
     {motion:'ltr', w:56, dur:6, y:[4, 50], svg:bats},
     {motion:'wave', w:22, dur:8, y:[20, 56], svg:ghost}],
-  newyear: [{motion:'burst', w:46, dur:2.6, count:3, svg:firework(['#fbbf24', '#ff5fb0', '#5fd0ff', '#ffffff'], 3)}, {motion:'burst', w:40, dur:2.6, count:3, svg:firework(['#a78bfa', '#34d399', '#fde68a'], 5)}],
-  lunar: [{motion:'ltr', w:84, dur:9, y:[8, 40], svg:lunar}],
+  newyear: [{motion:'burst', w:46, dur:2.6, count:3, svg:firework(['#fbbf24', '#ff5fb0', '#5fd0ff', '#ffffff'], 3)}, {motion:'arc', w:26, dur:3.2, x:[60, 70], y:[30, 44], svg:champagne}],
+  lunar: [{motion:'ltr', w:84, dur:9, y:[8, 40], svg:lunar}, {motion:'hop', w:40, dur:8, svg:lionDance}],
   valentine: [{motion:'rtl', flip:true, w:36, dur:7.5, y:[6, 40], svg:cupid}, {motion:'rise', w:11, dur:6, count:5, svg:heart}],
-  patrick: [{motion:'arc', w:92, dur:4.6, y:[26, 36], svg:patrick}],
+  patrick: [{motion:'arc', w:92, dur:4.6, y:[26, 36], svg:patrick}, {motion:'hop', w:18, dur:7, svg:leprechaun}],
   eid: [{motion:'arc', w:34, dur:5.4, x:[56, 66], y:[3, 8], svg:eidMoon}, {motion:'rise', w:10, dur:8, count:4, svg:fanous('#ffb84d', '#d4a017')}],
-  easter: [{motion:'hop', w:24, dur:7, svg:easter}],
+  easter: [{motion:'hop', w:24, dur:7, svg:easter}, {motion:'hop-rtl', flip:true, w:14, dur:6.5, svg:chick}],
   diwali: [{motion:'rise', w:9, dur:8, count:6, svg:skyLantern}, {motion:'burst', w:42, dur:2.6, count:2, svg:firework(['#fbbf24', '#ec4899', '#14b8a6', '#ffffff'], 7)}],
-  hanukkah: [{motion:'ltr', w:15, dur:6.5, y:[76, 80], svg:hanukkah}],
+  hanukkah: [{motion:'ltr', w:15, dur:6.5, y:[76, 80], svg:hanukkah, noFlip:true}, {motion:'arc', w:44, dur:4.2, y:[20, 32], svg:menorah}],
   spring: [{motion:'wave', w:14, dur:7.5, y:[10, 50], svg:butterfly('#ff8a1f', '#ffd59e', '#2b1405')}, {motion:'wave', w:13, dur:8, y:[20, 60], svg:butterfly('#3b82f6', '#b8e1ff', '#0b1e4a')}, {motion:'ltr', w:10, dur:5.5, y:[30, 66], svg:bee}],
   summer: [{motion:'ltr', w:40, dur:7, y:[4, 24], svg:gulls}, {motion:'rtl', w:18, dur:10, y:[6, 30], svg:balloon}, {motion:'hop', w:13, dur:5.5, svg:beachBall}],
-  autumn: [{motion:'rtl', flip:true, w:52, dur:8.5, y:[4, 22], svg:geese}],
+  autumn: [{motion:'rtl', flip:true, w:52, dur:8.5, y:[4, 22], svg:geese}, {motion:'hop', w:22, dur:6.5, svg:squirrel}],
   winter: [{motion:'ltr', w:30, dur:5.5, y:[74, 78], svg:winter}, {motion:'ltr', w:28, dur:7, y:[6, 30], svg:snowOwl}]
 };
 window.GW_SEASONAL = Object.assign(window.GW_SEASONAL || {}, {FLY, art:{stops, lin, rad, rep, morph, turn, bob, blink, glint, trail, scatter, svg}});

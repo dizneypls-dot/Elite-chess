@@ -651,14 +651,15 @@ button.mv:hover{background:var(--surface)}
 /* flyovers */
 .fly{position:absolute;width:var(--w);pointer-events:none;animation:var(--d) linear both;opacity:.96;will-change:transform}
 .fly-in svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 1cqi 1cqi rgba(0,0,0,.25))}
-.fly.flip .fly-in{transform:scaleX(-1)}
+/* the mirror sits on its own wrapper, so a mirrored character can still bob, wave and hop */
+.fly.flip .fly-face{transform:scaleX(-1)}
 .fly.ltr,.fly.wave{left:calc(-1 * var(--w));top:var(--y);animation-name:flyLtr}
-.fly.rtl{left:100cqi;top:var(--y);animation-name:flyRtl}
-.fly.ltr .fly-in{animation:flyBob 1.6s ease-in-out infinite alternate}
-.fly.rtl .fly-in{animation:flyBob 1.6s ease-in-out infinite alternate}
-.fly.flip.rtl .fly-in,.fly.flip.ltr .fly-in{animation:flyBobFlip 1.6s ease-in-out infinite alternate}
-.fly.wave .fly-in{animation:flyWave .9s ease-in-out infinite alternate}
+.fly.rtl,.fly.wave-rtl{left:100cqi;top:var(--y);animation-name:flyRtl}
+.fly.ltr .fly-in,.fly.rtl .fly-in{animation:flyBob 1.6s ease-in-out infinite alternate}
+.fly.wave .fly-in,.fly.wave-rtl .fly-in{animation:flyWave .9s ease-in-out infinite alternate}
 .fly.hop{left:calc(-1 * var(--w));bottom:1cqi;animation-name:flyLtr}
+.fly.hop-rtl{left:100cqi;bottom:1cqi;animation-name:flyRtl}
+.fly.hop-rtl .fly-in{animation:flyHop .55s cubic-bezier(.3,.7,.4,1) infinite alternate}
 .fly.hop .fly-in{animation:flyHop .55s cubic-bezier(.3,.7,.4,1) infinite alternate}
 .fly.rise{left:var(--x);bottom:calc(-1 * var(--w) - 4cqi);animation-name:flyRise}
 .fly.rise .fly-in{animation:flySway 1.4s ease-in-out infinite alternate}
@@ -668,7 +669,6 @@ button.mv:hover{background:var(--surface)}
 @keyframes flyRtl{to{transform:translateX(calc(-100cqi - var(--w)))}}
 @keyframes flyRise{to{transform:translateY(calc(-112cqi - var(--w)))}}
 @keyframes flyBob{to{transform:translateY(-3cqi)}}
-@keyframes flyBobFlip{from{transform:scaleX(-1)}to{transform:scaleX(-1) translateY(-3cqi)}}
 @keyframes flyWave{from{transform:translateY(-6cqi) rotate(-6deg)}to{transform:translateY(6cqi) rotate(6deg)}}
 @keyframes flyHop{from{transform:translateY(0)}to{transform:translateY(-12cqi)}}
 @keyframes flySway{from{transform:translateX(-3cqi) rotate(-4deg)}to{transform:translateX(3cqi) rotate(4deg)}}

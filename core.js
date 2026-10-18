@@ -184,20 +184,55 @@ function renderFx(frame){
   }
   fx.innerHTML = h;
 }
-/* ---------- Flyovers: Santa's sleigh, bats, a dragon dance … cross the board now and then ---------- */
+/* ---------- Flyovers: Santa's sleigh, bats, a dragon dance … cross the board now and then ----------
+   One show at a time: a lead character, then (when the theme has one) a different character from the other side,
+   one high and one low. The same character never leads twice running. */
+const lastLead = {};
+const DIR = {ltr:1, wave:1, hop:1, rtl:-1, 'wave-rtl':-1, 'hop-rtl':-1};
+const BACK = {ltr:'rtl', rtl:'ltr', wave:'wave-rtl', 'wave-rtl':'wave', hop:'hop-rtl', 'hop-rtl':'hop'};
+// the same scene travelling the other way (mirrored), unless it carries writing that would read backwards
+const reversed = sc => sc.noFlip || !BACK[sc.motion] ? null : Object.assign({}, sc, {motion: BACK[sc.motion], flip: !sc.flip});
 function flyover(frame, packId){
   const S = window.GW_SEASONAL, scenes = S && S.FLY[packId];
   if (!scenes || !scenes.length) return;
-  const sc = scenes[rnd(scenes.length)], pick = a => Array.isArray(a) ? a[0] + Math.random() * (a[1] - a[0]) : a;
   let fx = frame.querySelector(':scope > .fx');
   if (!fx){ fx = document.createElement('div'); fx.className = 'fx'; fx.setAttribute('aria-hidden', 'true'); frame.appendChild(fx); }
-  for (let i = 0; i < (sc.count || 1); i++){
-    const el = document.createElement('div'), delay = i * (sc.motion === 'burst' ? .7 : 1.1);
-    el.className = `fly ${sc.motion}${sc.flip ? ' flip' : ''}`;
-    el.style.cssText = `--w:${sc.w}cqi;--d:${sc.dur}s;--y:${pick(sc.y || [8, 50]).toFixed(1)}cqi;--x:${pick(sc.x || [6, 78]).toFixed(1)}cqi;animation-delay:${delay}s`;
-    el.innerHTML = `<div class="fly-in">${sc.svg}</div>`;
-    fx.appendChild(el);
-    setTimeout(() => el.remove(), (sc.dur + delay) * 1000 + 400);
+  if (fx.querySelector('.fly')) return;
+  const choices = scenes.map((s, i) => i).filter(i => scenes.length < 2 || i !== lastLead[packId]);
+  const li = choices[rnd(choices.length)];
+  let lead = scenes[li];
+  lastLead[packId] = li;
+  const show = [];
+  let partner = null;
+  // a different character, coming the other way (turning the lead round if the other can't be mirrored)
+  const others = scenes.filter(s => s !== lead && s.svg !== lead.svg);
+  if (others.length){
+    const d = DIR[lead.motion] || 0, fits = [];
+    for (const s of others){
+      if (!d || !DIR[s.motion] || DIR[s.motion] === -d) fits.push([s, lead]);
+      else if (reversed(s)) fits.push([reversed(s), lead]);
+      else if (reversed(lead)) fits.push([s, reversed(lead)]);
+    }
+    const travel = fits.filter(([s]) => DIR[s.motion]);
+    const pool = d && travel.length ? travel : fits;
+    if (pool.length) [partner, lead] = pool[rnd(pool.length)];
+  }
+  show.push([lead, 0, 'high', li]);
+  if (partner) show.push([partner, 1.1 + Math.random(), 'low', scenes.indexOf(scenes.find(s => s.svg === partner.svg))]);
+  const pick = a => Array.isArray(a) ? a[0] + Math.random() * (a[1] - a[0]) : a;
+  for (const [sc, start, lane, idx] of show){
+    // keep two travellers apart: the lead in the upper part of its range, the partner in the lower
+    let ys = sc.y || [8, 50];
+    if (show.length > 1 && DIR[sc.motion] && !/hop/.test(sc.motion) && ys[1] - ys[0] > 12){ const mid = (ys[0] + ys[1]) / 2; ys = lane === 'high' ? [ys[0], mid - 4] : [mid + 4, ys[1] + 8]; }
+    for (let i = 0; i < (sc.count || 1); i++){
+      const el = document.createElement('div'), delay = start + i * (sc.motion === 'burst' ? .7 : 1.1);
+      el.className = `fly ${sc.motion}${sc.flip ? ' flip' : ''}`;
+      el.dataset.scene = idx;
+      el.style.cssText = `--w:${sc.w}cqi;--d:${sc.dur}s;--y:${pick(ys).toFixed(1)}cqi;--x:${pick(sc.x || [6, 78]).toFixed(1)}cqi;animation-delay:${delay.toFixed(2)}s`;
+      el.innerHTML = `<div class="fly-in"><div class="fly-face">${sc.svg}</div></div>`;
+      fx.appendChild(el);
+      setTimeout(() => el.remove(), (sc.dur + delay) * 1000 + 400);
+    }
   }
 }
 function flyNow(){

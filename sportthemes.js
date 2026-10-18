@@ -230,22 +230,23 @@ void rep;
 if (ART){
   const fly = (key, tint, spin, y = [16, 66]) => ({motion:'ltr', w:36, dur:2.6, y, svg:ART.ballFly(key, tint, spin)});
   const burst = {motion:'burst', w:36, dur:2.4, count:3, svg:confettiBurst};
+  const racket = {motion:'arc', w:40, dur:2, y:[18, 36], svg:ART.racketSwing};
   Object.assign(SEA.FLY, {
-    'sp-f1': [{motion:'ltr', w:70, dur:2.6, y:[26, 66], svg:ART.f1car}],
-    'sp-motogp': [{motion:'ltr', w:46, dur:2.8, y:[22, 60], svg:ART.motoBike}],
-    'sp-hardcourt': [fly('tennis', '#d9ec3c', .35)],
-    'sp-clay': [Object.assign(fly('tennis', '#d9ec3c', .35), {motion:'rtl', flip:true})],
-    'sp-grass': [fly('tennis', '#d9ec3c', .35)],
-    'sp-golf': [{motion:'arc', w:84, dur:3.4, y:[16, 34], svg:ART.golfShot}],
+    'sp-f1': [{motion:'ltr', w:70, dur:2.6, y:[26, 66], svg:ART.f1car, noFlip:true}, {motion:'ltr', w:48, dur:3.6, y:[30, 70], svg:ART.safetyCar}],
+    'sp-motogp': [{motion:'ltr', w:46, dur:2.8, y:[22, 60], svg:ART.motoBike, noFlip:true}, {motion:'arc', w:30, dur:3, y:[10, 26], svg:ART.flagWave}],
+    'sp-hardcourt': [fly('tennis', '#d9ec3c', .35), racket],
+    'sp-clay': [Object.assign(fly('tennis', '#d9ec3c', .35), {motion:'rtl', flip:true}), racket],
+    'sp-grass': [fly('tennis', '#d9ec3c', .35), racket],
+    'sp-golf': [{motion:'arc', w:84, dur:3.4, y:[16, 34], svg:ART.golfShot}, {motion:'ltr', w:36, dur:6.5, y:[62, 70], svg:ART.golfCart}],
     'sp-football': [{motion:'arc', w:84, dur:3, y:[14, 34], svg:ART.goalShot}, burst],
     'sp-gridiron': [fly('gridiron', '#a8662e', .7), burst],
-    'sp-afl': [fly('sherrin', '#d71920', .7), burst],
+    'sp-afl': [Object.assign(fly('sherrin', '#d71920', .7), {noFlip:true}), burst],
     'sp-rugby': [fly('rugby', '#ffffff', .8), burst],
     'sp-baseball': [Object.assign(fly('baseball', '#ffffff', .22), {dur:2}), burst],
-    'sp-basketball': [{motion:'arc', w:80, dur:2.8, y:[12, 28], svg:ART.hoopShot}],
-    'sp-hockey': [{motion:'ltr', w:40, dur:2.4, y:[70, 76], svg:ART.puckSlide}],
-    'sp-cricket': [Object.assign(fly('cricket', '#ff5a52', .25), {dur:2.2})],
-    'sp-ufc': [{motion:'burst', w:52, dur:1.9, x:[12, 36], y:[24, 50], svg:ART.punch}]
+    'sp-basketball': [{motion:'arc', w:80, dur:2.8, y:[12, 28], svg:ART.hoopShot}, burst],
+    'sp-hockey': [{motion:'ltr', w:40, dur:2.4, y:[70, 76], svg:ART.puckSlide, noFlip:true}, {motion:'ltr', w:42, dur:7, y:[30, 50], svg:ART.iceResurfacer}],
+    'sp-cricket': [Object.assign(fly('cricket', '#ff5a52', .25), {dur:2.2}), {motion:'burst', w:30, dur:2.2, x:[30, 58], y:[24, 46], svg:ART.bowled}],
+    'sp-ufc': [{motion:'burst', w:52, dur:1.9, x:[12, 36], y:[24, 50], svg:ART.punch}, {motion:'arc', w:56, dur:3.2, y:[12, 24], svg:ART.beltGleam}]
   });
 }
 window.GW_SPORT_THEMES = {SPORTS, packForCard, sportPackNow};

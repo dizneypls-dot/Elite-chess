@@ -296,5 +296,72 @@ const punch = (() => { const b = BALLS.glove();
     <g><path d="M-120 0H-40" stroke="url(#puTrail)" stroke-width="16" stroke-linecap="round"/><g transform="scale(.8)">${b.g}</g>
       <animateTransform attributeName="transform" type="translate" values="-120 0;0 0;-8 0" keyTimes="0;.34;1" calcMode="spline" keySplines=".5 0 .9 .4;.2 .6 .4 1"${once(1.8)}/></g></svg>`; })();
 window.GW_SPORT_ART = {f1car, motoBike, BALLS, ballFly, golfShot, goalShot, hoopShot, puckSlide, punch};
+// ---- second characters for the sports shows ----
+// the safety car: a sleek coupé with a flashing light bar (no lettering, so it can come from either side)
+const safetyCar = `<svg viewBox="-30 0 330 110" xmlns="http://www.w3.org/2000/svg"><defs>${LG('scBody', [[0, '#f4f6fa'], [.45, '#b9c2cf'], [1, '#4a5160']])}${LG('scGlass', [[0, '#7fb0d9'], [1, '#0b1d33']])}${RG('scTyre', [[0, '#2c2c30'], [1, '#050506']])}${RG('scRim', [[0, '#e8ecf2'], [1, '#5a6070']])}${RG('scShadow', [[0, '#000', .5], [1, '#000', 0]])}${RG('scAmber', [[0, '#fff3b0'], [.5, '#ffb627'], [1, '#ffb627', 0]])}${RG('scGreen', [[0, '#d9ffd0'], [.5, '#22c55e'], [1, '#22c55e', 0]])}<filter id="scSpin"><feGaussianBlur stdDeviation="1.8"/></filter></defs>
+  ${[30, 50, 70].map((y, i) => `<path d="M${-20 - i * 12} ${y}H${40 - i * 6}" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity="0"><animate attributeName="opacity" values="0;.5;0"${rep(.45, i * .12)}/></path>`).join('')}
+  <ellipse cx="140" cy="98" rx="130" ry="7" fill="url(#scShadow)"/>
+  <path d="M14 74c0-10 6-16 18-18l46-8c20-16 46-24 74-24 26 0 46 8 64 22l36 6c14 2 22 10 22 22v8H14z" fill="url(#scBody)" stroke="#2a2f3a" stroke-width="1.2"/>
+  <path d="M86 48c18-12 40-18 64-18 20 0 36 6 50 16z" fill="url(#scGlass)"/><path d="M146 30v18" stroke="#2a2f3a" stroke-width="3"/>
+  <path d="M20 60c40-6 120-10 236 0" stroke="#fff" stroke-opacity=".7" stroke-width="2" fill="none"/>
+  <path d="M18 72h252" stroke="#e10600" stroke-width="5"/><path d="M18 78h252" stroke="#ffd23f" stroke-width="3"/>
+  <path d="M262 66l12 2v6h-12z" fill="#fff6c8"/><path d="M14 66l8-2v8h-8z" fill="#e10600"/>
+  <rect x="110" y="22" width="56" height="7" rx="3" fill="#1a1d24"/>
+  <ellipse cx="124" cy="24" rx="10" ry="6" fill="url(#scAmber)"><animate attributeName="opacity" values="1;.1;1"${rep(.5)}/></ellipse><ellipse cx="152" cy="24" rx="10" ry="6" fill="url(#scGreen)"><animate attributeName="opacity" values=".1;1;.1"${rep(.5)}/></ellipse>
+  ${[[64, 84], [222, 84]].map(([x, y]) => `<g transform="translate(${x} ${y})"><circle r="17" fill="url(#scTyre)"/><circle r="11" fill="url(#scRim)"/><g filter="url(#scSpin)"><g>${Array.from({length: 5}, (_, i) => `<path d="M0 0L${(10 * Math.cos(i * 1.2566)).toFixed(1)} ${(10 * Math.sin(i * 1.2566)).toFixed(1)}" stroke="#3a3f4a" stroke-width="2.4"/>`).join('')}<animateTransform attributeName="transform" type="rotate" values="0;360" dur=".14s" repeatCount="indefinite"/></g></g><circle r="3" fill="#14161b"/></g>`).join('')}</svg>`;
+// a marshal's chequered flag waving (MotoGP and F1)
+const flagWave = (() => { const f = k => `M40 22C70 ${14 + k} 100 ${30 - k} 140 ${20 + k}V96C100 ${106 - k} 70 ${90 + k} 40 ${98 - k}Z`;
+  return `<svg viewBox="0 0 160 170" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="fwChq" width="20" height="19" patternUnits="userSpaceOnUse"><rect width="20" height="19" fill="#fff"/><rect width="10" height="9.5" fill="#111"/><rect x="10" y="9.5" width="10" height="9.5" fill="#111"/></pattern>${LG('fwShade', [[0, '#000', .25], [.5, '#fff', .2], [1, '#000', .3]], 1, 0)}${LG('fwPole', [[0, '#e8ecf2'], [1, '#6b7280']], 1, 0)}</defs>
+    <g><animateTransform attributeName="transform" type="rotate" values="-14 38 160;10 38 160;-14 38 160" dur="1s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+    <rect x="34" y="14" width="7" height="150" rx="3" fill="url(#fwPole)"/><path d="${f(0)}" fill="url(#fwChq)" stroke="#333" stroke-width="1"><animate attributeName="d" values="${f(0)};${f(10)};${f(0)}" dur=".5s" repeatCount="indefinite"/></path>
+    <path d="${f(0)}" fill="url(#fwShade)"><animate attributeName="d" values="${f(0)};${f(10)};${f(0)}" dur=".5s" repeatCount="indefinite"/></path></g></svg>`; })();
+// tennis: a racket swings through and the ball flies off
+const racketSwing = (() => { const b = BALLS.tennis(.3);
+  return `<svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg"><defs>${b.defs}${LG('rsFrame', [[0, '#3a3f4a'], [.5, '#e10600'], [1, '#3a3f4a']], 1, 0)}${LG('rsGrip', [[0, '#ffffff'], [1, '#b9c2cf']], 1, 0)}${RG('rsBlur', [[0, '#fff', 0], [.8, '#fff', .25], [1, '#fff', 0]])}<pattern id="rsStr" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M0 0H5M0 0V5" stroke="#f4f6ea" stroke-width=".8"/></pattern></defs>
+    <path d="M60 150A90 90 0 0 1 140 40" stroke="url(#rsBlur)" stroke-width="44" fill="none" opacity="0"><animate attributeName="opacity" values="0;.8;0" keyTimes="0;.3;.6" dur="1.6s" fill="freeze"/></path>
+    <g><animateTransform attributeName="transform" type="rotate" values="-70 60 150;10 60 150;30 60 150" keyTimes="0;.32;1" dur="1.6s" fill="freeze" calcMode="spline" keySplines=".5 0 .7 .4;.2 .7 .4 1"/>
+      <rect x="56" y="104" width="9" height="46" rx="3" fill="url(#rsGrip)"/><path d="M60 104L48 82M60 104L72 82" stroke="url(#rsFrame)" stroke-width="5"/>
+      <ellipse cx="60" cy="56" rx="24" ry="32" fill="url(#rsStr)" stroke="url(#rsFrame)" stroke-width="6"/></g>
+    <g><g transform="scale(.32)">${b.g}</g><animateMotion path="M128 64L128 64L214 20" keyPoints="0;0;1" keyTimes="0;.32;1" calcMode="linear" dur="1.6s" fill="freeze"/></g></svg>`; })();
+// golf: a cart rolls by with a bag of clubs
+const golfCart = `<svg viewBox="0 0 220 140" xmlns="http://www.w3.org/2000/svg"><defs>${LG('gcBody', [[0, '#ffffff'], [.6, '#e3e8ef'], [1, '#8a93a6']])}${LG('gcRoof', [[0, '#2e7d32'], [1, '#14501a']])}${LG('gcBag', [[0, '#e5484d'], [1, '#8a0a12']], 1, 0)}${RG('gcTyre', [[0, '#3a3a3a'], [1, '#0a0a0a']])}${RG('gcShadow', [[0, '#000', .45], [1, '#000', 0]])}${LG('gcGlass', [[0, '#bfe3ff', .8], [1, '#5a8ab5', .5]])}</defs>
+  <ellipse cx="110" cy="130" rx="96" ry="6" fill="url(#gcShadow)"/>
+  <path d="M30 26h140l6 6H24z" fill="url(#gcRoof)"/><path d="M40 32v50M160 32v54" stroke="#9aa3b2" stroke-width="3"/><path d="M160 34l22 38" stroke="url(#gcGlass)" stroke-width="5"/>
+  <path d="M18 90c0-8 6-12 14-12h52l10-12h70c10 0 18 6 20 16l4 14H18z" fill="url(#gcBody)" stroke="#5a6070" stroke-width="1.2"/>
+  <path d="M96 66h50v20H92z" fill="#2a2f3a"/><path d="M98 74h44" stroke="#5a6070" stroke-width="3"/>
+  <rect x="22" y="48" width="18" height="44" rx="6" fill="url(#gcBag)" stroke="#5a0008" stroke-width="1"/>${[[26, 34], [31, 30], [36, 36]].map(([x, y]) => `<path d="M${x} 50V${y}" stroke="#c9ced8" stroke-width="2"/><rect x="${x - 3}" y="${y - 5}" width="7" height="5" rx="1" fill="#1a1d24"/>`).join('')}
+  <circle cx="122" cy="50" r="9" fill="#f0c8a8"/><path d="M112 46c2-8 18-8 20 0z" fill="#1f5f2a"/><path d="M130 46h8" stroke="#1f5f2a" stroke-width="3"/><path d="M116 60c6 6 14 8 22 6l-2 14h-24z" fill="#3a6fb5"/>
+  ${[[52, 112], [172, 112]].map(([x, y]) => `<g transform="translate(${x} ${y})"><circle r="16" fill="url(#gcTyre)"/><circle r="8" fill="#c9ced8"/><g><path d="M-7 0H7M0-7V7" stroke="#6b7280" stroke-width="2"/><animateTransform attributeName="transform" type="rotate" values="0;360" dur=".5s" repeatCount="indefinite"/></g></g>`).join('')}</svg>`;
+// hockey: the ice resurfacer leaves a shine behind it
+const iceResurfacer = `<svg viewBox="-60 0 300 130" xmlns="http://www.w3.org/2000/svg"><defs>${LG('irBody', [[0, '#f4f8ff'], [.6, '#c9d8ee'], [1, '#6b84a8']])}${LG('irBlue', [[0, '#3b82f6'], [1, '#0b3c7d']])}${LG('irWet', [[0, '#cfe3ff', 0], [1, '#ffffff', .7]], 1, 0)}${RG('irTyre', [[0, '#3a3a3a'], [1, '#0a0a0a']])}</defs>
+  <path d="M-60 116H40" stroke="url(#irWet)" stroke-width="8"/>${[0, 1, 2].map(i => `<path d="M${-40 + i * 30} 112h18" stroke="#fff" stroke-width="2" opacity="0"><animate attributeName="opacity" values="0;.9;0"${rep(.8, i * .25)}/></path>`).join('')}
+  <path d="M30 104h-20v10h24z" fill="#5a6070"/>
+  <path d="M30 104V54c0-6 4-10 10-10h120c10 0 16 6 18 14l10 46z" fill="url(#irBody)" stroke="#4a5a74" stroke-width="1.2"/>
+  <path d="M30 70h160M30 86h162" stroke="url(#irBlue)" stroke-width="6"/>
+  <rect x="44" y="20" width="60" height="26" rx="4" fill="url(#irBody)" stroke="#4a5a74" stroke-width="1"/><path d="M50 26h48v14H50z" fill="#bfe3ff" opacity=".6"/>
+  <path d="M130 44v-16h30l10 16z" fill="url(#irBody)" stroke="#4a5a74" stroke-width="1"/><path d="M136 30h20l6 12h-26z" fill="#7fb0d9" opacity=".7"/>
+  <circle cx="148" cy="38" r="7" fill="#f0c8a8"/><path d="M140 36c0-8 16-8 16 0z" fill="#e10600"/>
+  <rect x="166" y="48" width="12" height="6" rx="2" fill="#ffd23f"><animate attributeName="opacity" values="1;.3;1"${rep(.8)}/></rect>
+  ${[[60, 108], [160, 108]].map(([x, y]) => `<g transform="translate(${x} ${y})"><circle r="15" fill="url(#irTyre)"/><circle r="7" fill="#c9ced8"/><g><path d="M-6 0H6M0-6V6" stroke="#6b7280" stroke-width="2"/><animateTransform attributeName="transform" type="rotate" values="0;360" dur=".8s" repeatCount="indefinite"/></g></g>`).join('')}</svg>`;
+// cricket: bowled! stumps and bails go flying
+const bowled = (() => { const b = BALLS.cricket(.3);
+  const stump = (x, rot, b2) => `<g><rect x="${x - 3}" y="-40" width="6" height="80" rx="2" fill="url(#bwWood)" stroke="#7a5a2a" stroke-width=".8"/><animateTransform attributeName="transform" type="rotate" values="0 ${x} 40;0 ${x} 40;${rot} ${x} 40" keyTimes="0;.35;1" dur="2s" fill="freeze" calcMode="spline" keySplines="0 0 1 1;.2 .7 .4 1"/></g>`;
+  const bail = (x, dx, dy, r) => `<g><rect x="${x - 7}" y="-44" width="14" height="4" rx="2" fill="url(#bwWood)" stroke="#7a5a2a" stroke-width=".6"/><animateTransform attributeName="transform" type="translate" values="0 0;0 0;${dx} ${dy}" keyTimes="0;.35;1" dur="2s" fill="freeze"/><animateTransform attributeName="transform" type="rotate" values="0;0;${r}" keyTimes="0;.35;1" dur="2s" fill="freeze" additive="sum"/></g>`;
+  return `<svg viewBox="-80 -80 160 140" xmlns="http://www.w3.org/2000/svg"><defs>${b.defs}${LG('bwWood', [[0, '#fff3d6'], [.5, '#e9cf9a'], [1, '#b8955a']], 1, 0)}${RG('bwFlash', [[0, '#fff', .9], [1, '#fff6c8', 0]])}</defs>
+    <ellipse cx="0" cy="44" rx="40" ry="5" fill="#000" opacity=".2"/>
+    <circle cx="0" cy="-10" r="30" fill="url(#bwFlash)" opacity="0"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.33;.4;.7" dur="2s" fill="freeze"/></circle>
+    ${stump(-14, -24)}${stump(0, 12)}${stump(14, 30)}${bail(-7, -40, -50, -260)}${bail(7, 46, -44, 320)}
+    <g><g transform="scale(.2)">${b.g}</g><animateMotion path="M-90 30Q-40 0 0 6L-30 30" keyPoints="0;.6;1" keyTimes="0;.35;1" calcMode="linear" dur="2s" fill="freeze"/></g></svg>`; })();
+// UFC: the championship belt, with a gleam sweeping across
+const beltGleam = `<svg viewBox="0 0 240 110" xmlns="http://www.w3.org/2000/svg"><defs>${LG('blGold', [[0, '#fff2b0'], [.35, '#f2c14e'], [.7, '#b8860b'], [1, '#fff2b0']], 1, 1)}${LG('blLeather', [[0, '#3a3f4a'], [.5, '#14161b'], [1, '#050506']])}${LG('blShine', [[0, '#fff', 0], [.5, '#fff', .85], [1, '#fff', 0]], 1, 0)}<clipPath id="blClip"><path d="M70 14h100l16 22v38l-16 22H70L54 74V36z"/></clipPath></defs>
+  <path d="M6 40c40-6 80-8 228 0v30c-148 8-188 6-228 0z" fill="url(#blLeather)"/><path d="M8 46c40-4 80-6 224 0M8 64c40 4 80 6 224 0" stroke="#f2c14e" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+  ${[24, 40, 200, 216].map(x => `<rect x="${x - 7}" y="44" width="14" height="22" rx="3" fill="url(#blGold)" stroke="#7a5a08" stroke-width=".8"/>`).join('')}
+  <path d="M70 14h100l16 22v38l-16 22H70L54 74V36z" fill="url(#blGold)" stroke="#7a5a08" stroke-width="1.4"/>
+  <path d="M78 24h84l10 14v30l-10 14H78L68 68V38z" fill="none" stroke="#7a5a08" stroke-width="1.6"/>
+  <circle cx="120" cy="54" r="20" fill="#14161b" stroke="url(#blGold)" stroke-width="4"/><path d="M110 46h20M112 54h16M110 62h20" stroke="#f2c14e" stroke-width="3"/>
+  ${[[84, 32, '#e5484d'], [156, 32, '#3b82f6'], [84, 76, '#3b82f6'], [156, 76, '#e5484d']].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="4.4" fill="${c}" stroke="#fff" stroke-width="1"/>`).join('')}
+  <g clip-path="url(#blClip)"><rect x="-40" y="0" width="30" height="110" fill="url(#blShine)" transform="skewX(-20)"><animate attributeName="x" values="-40;260" dur="1.6s" repeatCount="indefinite"/></rect></g></svg>`;
+Object.assign(window.GW_SPORT_ART, {safetyCar, flagWave, racketSwing, golfCart, iceResurfacer, bowled, beltGleam});
+
 
 })();
