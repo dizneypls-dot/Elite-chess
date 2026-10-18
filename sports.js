@@ -65,7 +65,13 @@ async function refresh(force = false){
   let ok = 0;
   await Promise.all(due.map(async f => { try { S.raw[f.id] = await getJSON(f.url); S.at[f.id] = Date.now(); ok++; } catch (_) {} }));
   if (due.length && !ok && !S.cards.length) S.err = true; else S.err = false;
-  if (ok){ build(); S.updated = Date.now(); try { localStorage.setItem('gw-sports', JSON.stringify({cards:S.cards, later:S.later, updated:S.updated})); } catch (_) {} }
+  if (ok){
+    build(); S.updated = Date.now();
+    try { localStorage.setItem('gw-sports', JSON.stringify({cards:S.cards, later:S.later, updated:S.updated})); } catch (_) {}
+    // a top event starting (or ending) switches the board theme, like the holidays do
+    const p = GW.autoPack && GW.autoPack();
+    if (p){ GW.applySettings(); GW.toast(`${p.icon} <b>${esc(p.name)} theme is on</b><br>${esc(p.line)} Change it any time in Customize.`); }
+  }
   S.busy = false;
   paint();
 }

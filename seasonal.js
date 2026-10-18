@@ -276,17 +276,20 @@ function shadeGradients(g){
 const KEYS = ['K', 'Q', 'R', 'B', 'N', 'P'];
 const wrap = inner => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${inner}</svg>`;
 const sets = (window.GW_DATA = window.GW_DATA || {}).PIECE_SETS = window.GW_DATA.PIECE_SETS || {};
-for (const [id, S] of Object.entries(SETS)){
+// motion: {K:['sway', args] …}; spark: {K:[[[x, y, r, s]…], colour] …}
+function register(id, S, motion = MOTION[id], spark = SPARK[id]){
   const svg = {};
   for (const side of ['w', 'b']) for (const k of KEYS){
     const g = S.draw[k](S.pal[side]), cut = g.indexOf('</g>') + 4;
     let body = g.slice(cut);
-    const m = MOTION[id] && MOTION[id][k], sp = SPARK[id] && SPARK[id][k];
+    const m = motion && motion[k], sp = spark && spark[k];
     if (m) body = MOVE[m[0]](body, m[1]);
     if (sp) body += sparkles(sp[0], sp[1]);
     svg[side + k] = wrap(shadeGradients(g.slice(0, cut) + body));
   }
   sets['th-' + id] = {name: S.name, author: 'Elite Chess', license: 'original', themed: true, animated: true, pack: id, svg};
 }
-window.GW_SEASONAL = Object.assign(window.GW_SEASONAL || {}, {SETS});
+for (const [id, S] of Object.entries(SETS)) register(id, S);
+// the drawing kit, for the sports sets (sportthemes.js)
+window.GW_SEASONAL = Object.assign(window.GW_SEASONAL || {}, {SETS, kit:{P, L, E, O, D, R, base, star, crown, cross, eye, register}});
 })();

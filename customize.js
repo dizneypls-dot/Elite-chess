@@ -28,7 +28,7 @@ function strip(themeId, setId, cwId){
 
 let tab = 'packs', previewBoard = null;
 function render(){
-  const tabs = [['packs', 'Seasons & holidays'], ['boards', 'Boards'], ['pieces', 'Pieces'], ['colors', 'Colourways'], ['sound', 'Sound'], ['avatar', 'Character']];
+  const tabs = [['packs', 'Seasons, holidays & sport'], ['boards', 'Boards'], ['pieces', 'Pieces'], ['colors', 'Colourways'], ['sound', 'Sound'], ['avatar', 'Character']];
   const now = D.packsFor(new Date(), settings.hemisphere), nowIds = now.map(p => p.id);
   let body = '';
   if (tab === 'packs'){

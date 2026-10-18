@@ -413,5 +413,5 @@ const FLY = {
   autumn: [{motion:'rtl', flip:true, w:52, dur:8.5, y:[4, 22], svg:geese}],
   winter: [{motion:'ltr', w:30, dur:5.5, y:[74, 78], svg:winter}, {motion:'ltr', w:28, dur:7, y:[6, 30], svg:snowOwl}]
 };
-window.GW_SEASONAL = Object.assign(window.GW_SEASONAL || {}, {FLY});
+window.GW_SEASONAL = Object.assign(window.GW_SEASONAL || {}, {FLY, art:{stops, lin, rad, rep, morph, turn, bob, blink, glint, trail, scatter, svg}});
 })();

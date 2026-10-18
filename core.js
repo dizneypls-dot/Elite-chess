@@ -169,6 +169,7 @@ const FX_SHAPES = {
 function renderFx(frame){
   let fx = frame.querySelector(':scope > .fx');
   const pack = settings.fx && settings.fxPack ? (D.PACKS || []).find(p => p.id === settings.fxPack) : null;
+  if (D.FX_SHAPES) Object.assign(FX_SHAPES, D.FX_SHAPES);   // sports weather (sportthemes.js)
   const kind = pack && FX_SHAPES[pack.fx] ? pack.fx : '';
   if (!kind){ if (fx) fx.remove(); return; }
   if (fx && fx.dataset.kind === kind) return;
