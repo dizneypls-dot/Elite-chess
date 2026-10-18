@@ -14,7 +14,7 @@ const store = {
   // progress that syncs between linked devices records when it last really changed (sync.js keeps the newer copy)
   set(k, v){ try { const s = JSON.stringify(v); if (localStorage.getItem(k) === s) return; localStorage.setItem(k, s); if (SYNCED.includes(k)) localStorage.setItem('gw-mod', String(Date.now())); } catch (_) {} }
 };
-const SYNCED = ['gw-profile', 'gw-settings', 'gw-archive', 'gw-fav'];
+const SYNCED = ['gw-profile', 'gw-settings', 'gw-archive', 'gw-fav', 'gw-friends'];
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const rnd = n => Math.floor(Math.random() * n);
 

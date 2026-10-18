@@ -165,6 +165,7 @@ function renderOnline(){
         <form class="ol-join" id="olJoinForm"><input class="search" id="olCode" maxlength="5" placeholder="Enter code" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Friend's game code"><button class="btn" id="olJoin" type="submit">Join</button></form>
       </div>`;
   }
+  if (!busy && st.state !== 'hosting' && GW.social) box.insertAdjacentHTML('beforeend', '<button class="btn big-row" id="olFriends" type="button"><span class="grow" style="text-align:left">👥 Friends & tournaments</span><span>›</span></button>');
   renderOnlineNow();
 }
 GW.renderOnline = () => { if (GW.currentScreen() === 'setup' && setup.mode === 'online') renderOnline(); };
@@ -186,6 +187,7 @@ $('olBox').addEventListener('click', e => {
   if (b.id === 'olQuick'){ store.set('gw-setup', setup); GW.Online.quickMatch(setup.tc); }
   if (b.id === 'olHost'){ store.set('gw-setup', setup); GW.Online.hostInvite(setup.tc); }
   if (b.id === 'olCancel') GW.Online.cancel();
+  if (b.id === 'olFriends') GW.show('friends');
   if (b.id === 'olCopy') GW.copyText(GW.Online.state().code, 'Code copied');
 });
 $('olBox').addEventListener('submit', e => { e.preventDefault(); GW.Online.joinCode($('olCode').value); });
@@ -1070,6 +1072,7 @@ function finishGame(st){
     profile.online[score === 1 ? 'w' : score === 0 ? 'l' : 'd']++;
     GW.saveProfile();
   }
+  if (G.mode === 'online' && GW.onlineGameOver) GW.onlineGameOver(G, st);
   if (G.mode !== 'cpu'){ archiveGame(st); return; }
   const b = D.BOTS[G.bots[opp(G.human)]];
   const score = st.winner === G.human ? 1 : st.winner ? 0 : 0.5;
@@ -1089,7 +1092,9 @@ function showResult(st){
   const o = G.outcome || {};
   const delta = o.delta != null ? `<div class="rating-change ${o.delta >= 0 ? 'up' : 'down'}"><span>${o.before}</span> → <b>${profile.rating}</b> <i>${o.delta >= 0 ? '+' : ''}${o.delta}</i></div>` : '';
   const cupMsg = o.cup ? `<div class="cup-msg">${o.cup.html}</div>` : '';
-  const nextBtn = o.cup && o.cup.next ? `<button class="btn violet grow" id="resNext" type="button">${o.cup.next}</button>` : `<button class="btn grow" id="resRematch" type="button">Rematch</button>`;
+  const tour = G.online && G.online.tour;
+  const nextBtn = tour ? `<button class="btn violet grow" id="resTour" type="button">Back to the tournament</button>`
+    : o.cup && o.cup.next ? `<button class="btn violet grow" id="resNext" type="button">${o.cup.next}</button>` : `<button class="btn grow" id="resRematch" type="button">Rematch</button>`;
   const m = GW.modal(`<h2>${title}</h2><div class="sub">${st.reason[0].toUpperCase() + st.reason.slice(1)}</div>
     <div class="vs">${who('w')}<div class="score">${st.result.replace('–', ' – ')}</div>${who('b')}</div>${delta}${cupMsg}
     <div class="stack">${G.hist.length >= 2 ? '<button class="btn pop big" id="resReview" type="button">Game Review</button>' : ''}
@@ -1103,7 +1108,8 @@ function showResult(st){
     e.target.disabled = true; e.target.textContent = 'Rematch asked…';
   });
   m.querySelector('#resNext')?.addEventListener('click', () => { GW.closeModal(); playCupMatch(G.cup.id); });
-  m.querySelector('#resNew').addEventListener('click', () => { GW.closeModal(); if (G.mode === 'online') GW.Online.leave(); GW.show(G.cup ? 'cups' : 'setup'); });
+  m.querySelector('#resTour')?.addEventListener('click', () => { GW.closeModal(); GW.Online.leave(); GW.show('friends'); });
+  m.querySelector('#resNew').addEventListener('click', () => { GW.closeModal(); if (G.mode === 'online') GW.Online.leave(); GW.show(G.cup ? 'cups' : tour ? 'friends' : 'setup'); });
   m.querySelector('#resClose').addEventListener('click', () => GW.closeModal());
   if (o.cup && o.cup.won) setTimeout(() => celebrate(G.cup.id), 400);
 }
@@ -1148,7 +1154,7 @@ $('resignBtn').addEventListener('click', () => {
     renderGame();
   });
 });
-$('newBtn').addEventListener('click', () => { if (G && G.mode === 'online') GW.Online.leave(); GW.show(G && G.cup ? 'cups' : 'setup'); });
+$('newBtn').addEventListener('click', () => { const t = G && G.online && G.online.tour; if (G && G.mode === 'online') GW.Online.leave(); GW.show(G && G.cup ? 'cups' : t ? 'friends' : 'setup'); });
 $('liveBtn').addEventListener('click', () => { if (G) viewPly(G.hist.length); });
 $('moves').addEventListener('click', e => { const b = e.target.closest('[data-ply]'); if (b) viewPly(+b.dataset.ply); });
 document.addEventListener('keydown', e => {

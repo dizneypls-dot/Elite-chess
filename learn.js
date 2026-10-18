@@ -79,6 +79,7 @@ function renderHome(){
       <button class="tile-card" data-go="rush" type="button"><div class="tile-ico" style="--c:#ef476f">⚡</div><div><div class="kicker">Puzzle Rush</div><h3>Best: ${profile.rushBest}</h3><p>Three minutes, three strikes.</p></div></button>
       <button class="tile-card" data-go="cups" type="button"><div class="tile-ico" style="--c:#ffb627">${GW.trophySVG('#ffb627')}</div><div><div class="kicker">Cups</div><h3>${cupsWon} / ${D.CUPS.length} won</h3><p>Knockout tournaments vs the bots.</p></div></button>
       <button class="tile-card" data-go="learn" type="button"><div class="tile-ico" style="--c:#22c55e">📘</div><div><div class="kicker">${nextLesson ? 'Next lesson' : 'Learn'}</div><h3>${nextLesson ? esc(nextLesson.l.title) : 'All done!'}</h3><p>${nextLesson ? esc(nextLesson.c.title) : 'Every lesson completed.'}</p></div></button>
+      <button class="tile-card" data-go="friends" type="button"><div class="tile-ico" style="--c:#0ea5e9">👥</div><div><div class="kicker">Friends</div><h3>Play your friends</h3><p>Challenges and tournaments with friends and online players.</p></div></button>
       <button class="tile-card" data-go="coach" type="button"><div class="tile-ico" style="--c:#6c5ce7">🎓</div><div><div class="kicker">Coach</div><h3>Play with a coach</h3><p>Best lines, threats, plans and blunder alerts.</p></div></button>
       <button class="tile-card" data-go="kids" type="button"><div class="tile-ico" style="--c:#ff7eb3">⭐</div><div><div class="kicker">Kids Academy</div><h3>Learn with stars</h3><p>Games for young players.</p></div></button>
       <button class="tile-card" data-go="openings" type="button"><div class="tile-ico" style="--c:#a855f7">📖</div><div><div class="kicker">Openings</div><h3>${(window.GW_OPENINGS || []).length.toLocaleString()} lines</h3><p>Explore and practise.</p></div></button>
@@ -919,7 +920,7 @@ document.querySelector('.rail').addEventListener('click', e => {
   const n = b.dataset.nav;
   if (n === 'settings') return openSettings();
   if (n === 'more'){
-    const items = [['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
+    const items = [['friends', '👥', 'Friends'], ['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
     const m = GW.modal(`<h2>More</h2><div class="more-grid">${items.map(([k, i, t]) => `<button class="more-item" type="button" data-more="${k}"><span>${i}</span>${t}</button>`).join('')}</div>`);
     m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else if (x.dataset.more === 'exit') GW.confirmExit(); else GW.show(x.dataset.more); });
     return;

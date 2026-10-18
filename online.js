@@ -50,14 +50,14 @@ function reset(){
 function cancel(){ reset(); setState('idle'); }
 
 // Both ways of connecting end here once the two players have agreed on a game
-function begin(conn, color, tc, who){
+function begin(conn, color, tc, who, extra = {}){
   S.conn = conn;
   conn.on('data', d => { if (S.conn === conn && GW.onlineData) GW.onlineData(d); });
   conn.on('close', () => { if (S.conn === conn && GW.onlineClosed) GW.onlineClosed(); });
   conn.on('error', () => { if (S.conn === conn && GW.onlineClosed) GW.onlineClosed(); });
   setState('playing');
   GW.sfx.success();
-  GW.startGame({mode:'online', human:color, bots:{w:null, b:null}, tc, rated:false, online:{opp: cleanWho(who)}});
+  GW.startGame({mode:'online', human:color, bots:{w:null, b:null}, tc, rated:false, online:Object.assign({opp: cleanWho(who)}, extra)});
 }
 
 /* =====================================================================
@@ -570,11 +570,16 @@ function joinCode(raw){
   start('joining', `Joining game ${code}…`, (token, inRoom) => inRoom ? roomJoinCode(code, token) : p2pJoinCode(code, token));
 }
 
+// Friends and tournaments (social.js) use the same direct connections, and hand a connection over for a game
+GW.P2P = {Peer, PREFIX, CODE_CHARS, randStr, dial, expect, cleanWho, validTc, supported: () => !framed && p2pSupported()};
+
 for (const ev of ['pagehide', 'beforeunload']) addEventListener(ev, () => { if (S.conn) S.conn.send({t:'bye'}); });
 
 GW.Online = {
   state: () => S,
   quickMatch, hostInvite, joinCode, cancel,
+  // play on a connection made elsewhere (a friend's challenge, a tournament pairing)
+  playOn(conn, color, tc, who, extra){ reset(); begin(conn, color, validTc(tc) ? tc : '300+0', who, extra); },
   send: d => !!(S.conn && S.conn.send(d)),
   leave(){
     const c = S.conn;

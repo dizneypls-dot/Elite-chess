@@ -3,7 +3,7 @@
    sync (auth.js) so that playing on two devices never throws work away. */
 (() => {
 const GW = window.GW;
-const KEYS = ['gw-profile', 'gw-settings', 'gw-archive', 'gw-fav'];
+const KEYS = ['gw-profile', 'gw-settings', 'gw-archive', 'gw-fav', 'gw-friends'];
 const MEDAL = {gold:3, silver:2, bronze:1};
 const mod = () => +(localStorage.getItem('gw-mod') || 0);
 
@@ -36,6 +36,9 @@ function merge(win, lose){
   if (games.size) out['gw-archive'] = [...games.values()].sort((a, b) => b.t - a.t).slice(0, 80);
   const fav = [...new Set([...((l['gw-fav'] || {}).ids || []), ...((w['gw-fav'] || {}).ids || [])])].sort();
   if (fav.length) out['gw-fav'] = {ids: fav};
+  const pals = new Map();
+  for (const f of [...((l['gw-friends'] || {}).list || []), ...((w['gw-friends'] || {}).list || [])]) if (f && f.code) pals.set(f.code, f);
+  if (pals.size) out['gw-friends'] = {list: [...pals.values()].sort((a, b) => a.code < b.code ? -1 : 1)};
   return {mod: Math.max(win.mod || 0, lose.mod || 0), data: out};
 }
 // The avatar is drawn into SVG, so only plain colours, words, numbers and flags are accepted from another device
