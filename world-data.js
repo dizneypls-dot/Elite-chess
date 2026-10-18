@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: world rankings snapshot, events, the story of chess, champions and famous games.
    RANKINGS and EVENTS are a built-in copy; the World screen prefers the live copy kept in the artifact database. */
 (() => {

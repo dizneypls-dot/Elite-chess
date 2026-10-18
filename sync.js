@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: a player's progress as one bundle, and merging two copies of it (from the cloud and this device).
    The newer profile wins; games, solved puzzles, achievements and trophies from both are kept. Used by the account
    sync (auth.js) so that playing on two devices never throws work away. */

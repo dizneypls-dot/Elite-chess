@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: Customize. Seasonal and holiday packs, boards, piece sets, colourways, sounds and effects,
    all previewed on a live board. */
 (() => {

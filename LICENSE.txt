@@ -1,0 +1,20 @@
+Elite Chess
+Copyright (c) 2026 Elite Chess. All rights reserved.
+
+This repository and website contain proprietary software and content: the Elite Chess app, its source code,
+characters, piece sets, boards, artwork, animations, themes, icons, lessons, text and design. They are NOT open
+source. No licence is granted to copy, modify, publish, distribute, sublicense, sell, or use any of it (including to
+train artificial intelligence), in whole or in part, without the prior written permission of Elite Chess.
+Viewing this repository on GitHub does not grant any right to use its contents elsewhere.
+
+Use of the app and website is governed by the Terms of Use: https://elitechess.online/terms.html
+Copyright and trade mark notice: https://elitechess.online/copyright.html
+
+Third-party components keep their own licences and are NOT covered by the notice above:
+  - Stockfish chess engine (stockfish.js, stockfish.wasm, stockfish.wasm.js, sf17-lite.js, sf17-lite.wasm):
+    GNU General Public License v3 (see sf17-COPYING.txt). Source: https://github.com/nmrugg/stockfish.js,
+    https://github.com/niklasf/stockfish.js, https://github.com/official-stockfish/Stockfish
+  - Optional piece sets in pieces.js and the Classic set in data.js: GPL v2+/v3+, MIT, Apache 2.0, CC BY 4.0, CC0,
+    as credited with full licence texts in licences.js and in the app under Legal -> Credits.
+  - Puzzle and opening data (puzzles.js, openings.js) and recorded sounds (sounds.js): CC0 public domain.
+  - Fonts embedded in index.html: SIL Open Font License 1.1.

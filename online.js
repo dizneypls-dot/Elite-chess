@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: online play.
    Inside Claude, games run through the artifact's live room: everyone who has the app open is in one lobby,
    each game gets its own named room, and each player's messages travel in their room presence as a short

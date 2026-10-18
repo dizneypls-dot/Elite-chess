@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: home, puzzles, courses and lessons, library, opening explorer, analysis board, profile, settings. */
 (() => {
 const GW = window.GW;
@@ -832,6 +833,14 @@ function openSettings(){
 }
 
 /* ============================== ONBOARDING ============================== */
+const GW_LEGAL_META = () => (window.GW_LEGAL || {}).meta || {year:'2026', effective:''};
+// Players who joined before the current Terms: tell them once where the Terms and Privacy Policy are
+function termsNotice(){
+  const v = GW_LEGAL_META().effective;
+  if (!v || profile.terms === v) return;
+  profile.terms = v; saveProfile();
+  setTimeout(() => GW.toast('<b>Terms of Use and Privacy Policy</b><br>They are in More → Legal. Using Elite Chess means you agree to them.'), 1600);
+}
 function onboarding(){
   if (profile.onboarded) return;   // e.g. a returning player whose account just loaded
   const levels = [['New to chess', 400], ['Beginner', 800], ['Intermediate', 1200], ['Advanced', 1600], ['Expert', 2000]];
@@ -845,9 +854,13 @@ function onboarding(){
     <select class="search" id="obCountry" aria-label="Your country"><option value="">🌐 Your country (optional)</option>${GW.COUNTRIES.map(c => `<option value="${c.code}"${c.code === guess ? ' selected' : ''}>${GW.flagOf(c.code)} ${esc(c.name)}</option>`).join('')}</select>
     <div class="label">Pick an avatar (you can customise it later)</div><div class="ob-looks">${looks.map((l, i) => `<button type="button" data-look="${i}" aria-pressed="${i === 0}"><div class="av">${D.avatar(l)}</div></button>`).join('')}</div>
     <div class="label">How well do you play?</div><div class="ob-levels">${levels.map(([n, r], i) => `<button type="button" data-lvl="${i}" aria-pressed="${i === lvl}"><b>${n}</b><span>${r}</span></button>`).join('')}</div>
-    <button class="btn pop big" id="obGo" type="button">Let’s play</button></div>`, {wide:true, onClose: () => { if (!profile.onboarded){ profile.onboarded = true; saveProfile(); } }});
+    <button class="btn pop big" id="obGo" type="button">Let’s play</button>
+    <p class="muted small ob-agree">By tapping Let’s play you agree to the <a href="#" data-doc="terms">Terms of Use</a> and the <a href="#" data-doc="privacy">Privacy Policy</a>. © ${esc(GW_LEGAL_META().year)} Elite Chess.</p>
+    <div class="lg-body ob-doc" id="obDoc" hidden></div></div>`, {wide:true, onClose: () => { if (!profile.onboarded){ profile.onboarded = true; saveProfile(); } }});
   m.addEventListener('click', e => {
-    const a = e.target.closest('[data-look]'), b = e.target.closest('[data-lvl]');
+    const a = e.target.closest('[data-look]'), b = e.target.closest('[data-lvl]'), d = e.target.closest('[data-doc]');
+    if (d){ e.preventDefault(); const box = m.querySelector('#obDoc'), same = !box.hidden && box.dataset.doc === d.dataset.doc;
+      box.hidden = same; box.dataset.doc = d.dataset.doc; box.innerHTML = same ? '' : `<div class="lg-doc">${(window.GW_LEGAL || {})[d.dataset.doc] || ''}</div>`; if (!same) box.scrollIntoView({block:'nearest', behavior:'smooth'}); }
     if (a){ look = +a.dataset.look; m.querySelectorAll('[data-look]').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.look === look))); }
     if (b){ lvl = +b.dataset.lvl; m.querySelectorAll('[data-lvl]').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.lvl === lvl))); }
   });
@@ -858,6 +871,7 @@ function onboarding(){
     profile.rating = profile.puzzleRating = levels[lvl][1];
     profile.best = profile.rating;
     profile.onboarded = true;
+    profile.terms = GW_LEGAL_META().effective;   // the version of the Terms they agreed to
     saveProfile();
     GW.closeModal();
     sfx.start();
@@ -953,7 +967,7 @@ function boot(data){
     try { GW.restoreGame(live); setTimeout(() => GW.toast('<b>Your game is saved</b><br>Tap Continue game to carry on.'), 600); } catch (_) {}
   }
   GW.show('home');
-  const next = () => { if (!profile.onboarded) setTimeout(onboarding, 300); else GW.show('home'); };
+  const next = () => { if (!profile.onboarded) setTimeout(onboarding, 300); else { GW.show('home'); termsNotice(); } };
   if (GW.needsLanding && GW.needsLanding()) GW.landing({onDone: next}); else next();
   // Android app: tell it this version started properly (it then looks for updates on elitechess.online)
   try { if (window.EliteApp && window.EliteApp.ready) window.EliteApp.ready(); } catch (_) {}

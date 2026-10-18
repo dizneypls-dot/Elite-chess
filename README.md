@@ -6,5 +6,8 @@ On iPhone open it in Safari → Share → Add to Home Screen; on Android use Chr
 - **Android app:** [EliteChess.apk](https://elitechess.online/EliteChess.apk)
 - **Single-file copy** that works offline from a phone's files: [Elite-Chess.html](https://elitechess.online/Elite-Chess.html)
 
-27 characters to play (Stockfish 17.1 at calibrated ratings), puzzles, lessons, online play, FIDE rankings, legends of chess,
-seasonal themes with animated character pieces, and recorded board sounds. Credits are in the app under Profile → About.
+## Legal
+© 2026 Elite Chess. All rights reserved. This is proprietary software and content, not open source: see [LICENSE.txt](LICENSE.txt).
+[Terms of Use](https://elitechess.online/terms.html) · [Privacy Policy](https://elitechess.online/privacy.html) · [Copyright & Trade Marks](https://elitechess.online/copyright.html).
+Third-party parts (the Stockfish engine under the GNU GPL v3, some optional piece sets, data, sounds and fonts) keep their own licences;
+they are credited with full licence texts in the app under Legal → Credits.

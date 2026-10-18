@@ -29,7 +29,11 @@ sf = f'<script type="text/plain" id="sf-src">{js("stockfish.js")}</script>'
 # Stockfish 17.1 (the rated bots) runs from an embedded copy: its script and its WebAssembly as base64
 sf += f'<script type="text/plain" id="sf17-src">{js("sf17-lite.js")}</script>'
 sf += '<script type="text/plain" id="sf17-wasm">' + base64.b64encode(open(os.path.join(root, 'sf17-lite.wasm'), 'rb').read()).decode() + '</script>'
-html = ('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+html = ('<!doctype html>\n<!-- Elite Chess. (c) 2026 Elite Chess. All rights reserved. Proprietary software and content: no copying, reuse,\n'
+        '     redistribution or AI training without written permission. Terms: https://elitechess.online/terms.html\n'
+        '     Third-party parts (Stockfish, GNU GPL v3; open-licence piece sets, data, sounds, fonts) keep their own licences: see Legal -> Credits. -->\n'
+        '<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+        '<meta name="copyright" content="(c) 2026 Elite Chess. All rights reserved.">'
         '<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>\n'
         + sf + '\n' + shim + '\n' + body + '\n</body></html>\n')
 data = html.encode('utf-8')

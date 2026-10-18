@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: "Tournament Wood", an original tournament-style set drawn like real turned pieces:
    boxwood for White, polished ebony for Black, each turning shaded as a cylinder with grain, beads, a carved knight
    and a baize pad underneath. Pieces are drawn on a 100×100 grid; the app adds its premium finish (sheen and rim) on

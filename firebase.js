@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: player accounts with Firebase (Authentication + Cloud Firestore), for elitechess.online and the
    Android app. Talks to Firebase's REST API directly (no SDK), so it works the same from the website and from the
    app's local page. Each player's progress is one document, users/<uid>, that only they can read and write

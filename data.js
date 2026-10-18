@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess core data: pieces, board themes, time controls, avatars, bots, cups and achievements. */
 (() => {
 /* ---------- Classic puzzles (hand-built, verified with Stockfish and a mate solver) ---------- */

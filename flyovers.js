@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: the animated flyovers that cross the board in seasonal and holiday themes (Santa's sleigh, the
    witch on her broom, a vampire, the dragon dance, fireworks …). Hand-drawn SVG with shading, and SMIL animation
    for the moving parts (galloping legs, flapping wings, capes and hair in the wind, glitter trails). The app moves

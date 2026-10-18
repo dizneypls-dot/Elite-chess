@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess learning content: courses, lessons, the book library and opening guides.
    All explanations are original writing. Puzzle drills draw from the lichess puzzle bank (CC0).
    Step types:

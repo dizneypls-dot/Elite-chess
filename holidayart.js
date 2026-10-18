@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: storybook-detail artwork for the holiday and season flyovers, replacing the simpler first drawings
    in flyovers.js: Santa's sleigh and reindeer, the witch, bats, the ghost, Cupid and a glass heart, the Easter bunny,
    butterflies and a bumblebee, geese, a penguin, a snowy owl, gulls, a beach ball, the rainbow to a pot of gold,

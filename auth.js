@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: the front page, sign-in and cloud save.
    - Claude account: inside Claude the page knows who is viewing; progress syncs to the artifact database
      (each player's own private data/users/<id>/save document), so it follows you to any device.
@@ -199,6 +200,7 @@ function landing({onDone} = {}){
         <button class="btn big-row ld-btn" type="button" id="ldEmail"><span class="ld-ico">✉️</span><span class="grow">Continue with email</span></button>
         ${googleOK() ? '<div id="ldGoogle" class="ld-google"></div>' : ''}
         <button class="btn ghost" type="button" id="ldGuest">Play as a guest</button>
+        <p class="muted small ob-agree">By continuing you agree to the <a href="#" data-ldoc="terms">Terms of Use</a> and the <a href="#" data-ldoc="privacy">Privacy Policy</a>. © 2026 Elite Chess.</p>
       </div>
       <form class="stack" id="ldForm" hidden autocomplete="on">
         <div class="tabs small" id="ldMode"><button type="button" data-m="in" aria-pressed="true">Sign in</button><button type="button" data-m="up" aria-pressed="false">${FB.enabled ? 'Create account' : 'Create profile'}</button></div>
@@ -351,6 +353,7 @@ function landing({onDone} = {}){
   });
   // Guest
   el.querySelector('#ldGuest').addEventListener('click', () => { setCurrent({id:'guest', provider:'guest', name:''}); finish(); });
+  el.addEventListener('click', e => { const d = e.target.closest('[data-ldoc]'); if (d){ e.preventDefault(); GW.openLegal && GW.openLegal(d.dataset.ldoc); } });
   el.querySelector('#ldNote').textContent = keep ? 'Your progress on this device comes with you when you sign in.' : 'Sign in to keep your rating, trophies and games.';
 }
 function loadGoogle(host, onCred){

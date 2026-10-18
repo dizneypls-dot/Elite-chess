@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: friends and tournaments (elitechess.online and the Android app).
    Every player has a permanent friend code. While the app is open it listens for friends on that code (through the
    same PeerJS introductions and direct connections as online play), so friends can add each other, see who is

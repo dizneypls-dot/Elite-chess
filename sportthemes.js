@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: sports themes. While one of the world's top events is on (sports.js finds them), its theme takes
    over the board the same way the holidays do: a board, character pieces, piece colours, a little weather and a
    flyover. Pieces keep their roles: pawn = the sport's ball, rook = a grandstand, bishop = the sport's tall

@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess core: helpers, settings, sound, profile and rating, the board component, tasks and screens.
    Everything shared lives on window.GW; play.js and learn.js add their screens to it. */
 (() => {

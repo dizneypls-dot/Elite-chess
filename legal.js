@@ -1,5 +1,6 @@
-/* Elite Chess: Legal. Credits and licences for every third-party part of the app (with the full licence texts),
-   and the notices about names and marks that belong to others. Opened from Settings and the More menu. */
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
+/* Elite Chess: Legal. The Terms of Use, Privacy Policy and Copyright notice (text in legal-docs.js, written by tools/legal_docs.py),
+   and credits for every third-party part of the app with the full licence texts. Opened from Settings, the More menu and onboarding. */
 (() => {
 const GW = window.GW, {esc} = GW;
 const LIC = () => window.GW_LICENSES || {};
@@ -44,13 +45,9 @@ const CREDITS = [
 const licLabel = id => id === 'CC0' ? 'CC0 (public domain)' : id === 'facts' ? 'Facts (no licence needed)' : id === 'service' ? 'Online service' : LIC_NAME[id] || id;
 const link = (u, t) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(t || u.replace(/^https:\/\//, ''))}</a>`;
 
-const NOTICES = `
-  <p><b>Original work.</b> The Elite Chess app, its code, its characters (the holiday and sports piece sets and their animated scenes), the Tournament Wood set, its boards, artwork, lessons and text are original work of Elite Chess. The third-party parts listed under Credits stay under their own licences, and nothing here limits the rights those licences give you.</p>
-  <p><b>Not affiliated.</b> Elite Chess is independent. It is not affiliated with, sponsored or endorsed by FIDE, lichess.org, Chess.com, the Stockfish project, or any sports league, team, event, competition or organiser. Names of events, teams, leagues and players appear only to identify them (for example in live scores and rankings) and belong to their owners. The sports themes are generic and use no official logos.</p>
-  <p><b>Open-source source code.</b> Stockfish is free software under the GNU GPL v3: you may use, change and share it under that licence. Its complete source code is at the links under Credits, and the exact engine files the app runs are published at elitechess.online.</p>`;
-
+const DOC = k => (window.GW_LEGAL || {})[k] || '';
 function render(tab){
-  if (tab === 'notices') return NOTICES;
+  if (tab !== 'credits') return `<div class="lg-doc">${DOC(tab)}</div>`;
   return CREDITS.map(g => `<div class="lg-group"><div class="label">${esc(g.group)}</div>${g.items.map(it => `<div class="lg-item">
       <div class="lg-h"><b>${esc(it.name)}</b><span class="lg-lic">${esc(licLabel(it.lic))}</span></div>
       <div class="muted small">${esc(it.by)}</div>
@@ -59,12 +56,12 @@ function render(tab){
       ${LIC()[it.lic] ? `<details class="lg-text"><summary>Read the ${esc(LIC_NAME[it.lic])}</summary><pre>${esc(LIC()[it.lic])}</pre></details>` : ''}
     </div>`).join('')}</div>`).join('');
 }
-function openLegal(tab = 'credits'){
-  const TABS = [['credits', 'Credits & licences'], ['notices', 'Notices']];
+function openLegal(tab = 'terms'){
+  const TABS = [['terms', 'Terms'], ['privacy', 'Privacy'], ['copyright', 'Copyright'], ['credits', 'Credits']];
   const m = GW.modal(`<h2>Legal</h2>
     <div class="tabs" id="lgTabs">${TABS.map(([v, t]) => `<button type="button" data-lg="${v}" aria-pressed="${v === tab}">${t}</button>`).join('')}</div>
     <div class="lg-body" id="lgBody">${render(tab)}</div>
-    <div class="row"><span class="grow"></span><button class="btn pop" type="button" id="lgDone">Done</button></div>`, {wide:true});
+    <div class="row"><span class="muted small grow">© ${esc((window.GW_LEGAL || {meta:{}}).meta.year || '2026')} Elite Chess. All rights reserved.</span><button class="btn pop" type="button" id="lgDone">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => { const b = e.target.closest('[data-lg]'); if (!b) return;
     m.querySelectorAll('[data-lg]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); m.querySelector('#lgBody').innerHTML = render(b.dataset.lg); m.querySelector('#lgBody').scrollTop = 0; });
   m.querySelector('#lgDone').addEventListener('click', () => GW.closeModal());

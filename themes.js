@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess styles: board themes, piece colourways, seasons and holiday packs.
    Boards: l / d are CSS backgrounds for light and dark squares, bg is what sits under the squares (textures),
    cl / cd colour the coordinates on light / dark squares. Colourways recolour any piece set by brightness. */

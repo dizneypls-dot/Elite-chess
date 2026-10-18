@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: seasonal character pieces and animated flyovers.
    Each holiday and season has its own set where every piece stays recognisable by role and height:
    pawn small and round, rook squat and flat-topped, bishop tall and pointed, knight an animal head,

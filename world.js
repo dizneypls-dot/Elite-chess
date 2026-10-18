@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: World (FIDE rankings, events, the title match) and Legends (the story of chess, champions,
    famous games with a move-by-move viewer). Rankings and events prefer the live copy in the artifact database. */
 (() => {

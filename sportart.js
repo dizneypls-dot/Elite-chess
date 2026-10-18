@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: high-detail artwork for the sports flyovers (sportthemes.js): a modern F1 car and a MotoGP bike
    at speed in a fictional "Elite" livery, and realistic balls (felt, pebbled leather, stitched seams, dimples) whose
    lighting stays put while the surface spins. Plain SVG with gradients, a few small texture filters and SMIL. */

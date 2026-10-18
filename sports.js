@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: the world's top sporting events while they are on, with live scores. Formula 1 and MotoGP race
    weekends, tennis Grand Slams, golf majors, the FIFA World Cup, Super Bowl, World Series, NBA Finals, Stanley Cup
    Final, Champions League final, AFL and NRL Grand Finals, big cricket tournaments, numbered UFC events and the

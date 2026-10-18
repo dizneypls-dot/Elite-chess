@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: play menu, games against bots and friends, rating, game review and cups. */
 (() => {
 const GW = window.GW;

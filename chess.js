@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Elite Chess: rules, notation, a small built-in search, a mate solver and a Stockfish wrapper.
    Squares are 0..63 with 0 = a8 and 63 = h1. Pieces are strings like 'wK' or 'bP'. */
 (() => {

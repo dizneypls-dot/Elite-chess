@@ -1,3 +1,4 @@
+/* © 2026 Elite Chess. All rights reserved. Proprietary: no copying, reuse or AI training without written permission. See terms.html. */
 /* Greenwood originals: puzzles found in engine games and verified with Stockfish (a unique winning move at
    every step, checked by a deeper second search). Ratings are estimates until players have tried them.
    Same format as puzzles.js. Kept in their own file so updating puzzles.js from Lichess never removes them. */
