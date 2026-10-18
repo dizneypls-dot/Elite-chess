@@ -904,6 +904,37 @@ body.landing-open{overflow:hidden}
 .tr-g span:last-child{text-align:right}.tr-g b{text-align:center;font-family:var(--f-mono)}
 .tr-g.me{box-shadow:inset 0 0 0 2px var(--accent)}
 @media (max-width:520px){.hide-s{display:none}.fr-grid{grid-template-columns:1fr}}
+/* ---------- Sport ---------- */
+.sp-strip{display:flex;flex-direction:column;gap:10px}
+.sp-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.sp-chip{display:flex;gap:10px;align-items:center;text-align:left;border:0;cursor:pointer;background:var(--surface);color:var(--ink);border-radius:16px;padding:12px 14px;box-shadow:0 2px 0 var(--line-deep);font:inherit;min-width:0}
+.sp-chip .grow{display:flex;flex-direction:column;min-width:0}.sp-chip b,.sp-chip .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-ico{font-size:24px;flex:none}.sp-ico.big{font-size:34px}
+.sp-k{font:800 11px var(--f-head);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;gap:6px;align-items:center}
+.sp-live{color:#fff;background:#e5484d;border-radius:99px;padding:1px 7px;animation:spPulse 1.6s ease-in-out infinite}
+.sp-on{color:#fff;background:#6c5ce7;border-radius:99px;padding:1px 7px}.sp-soon{color:#7a4b00;background:#ffe9a0;border-radius:99px;padding:1px 7px}.sp-done{color:var(--ink);background:var(--surface-3);border-radius:99px;padding:1px 7px}
+@keyframes spPulse{50%{opacity:.6}}
+.sp-h{margin:22px 0 10px}
+.sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.sp-card{display:flex;flex-direction:column;gap:8px}.sp-card.in{box-shadow:0 0 0 2px #e5484d}
+.sp-head{display:flex;gap:12px;align-items:center}.sp-head h3{margin:2px 0 0;font-size:17px}
+.sp-m{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto minmax(0,1fr);gap:8px;align-items:center;background:var(--surface-2);border-radius:12px;padding:8px 10px}
+.sp-m.fight{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+.sp-t{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.sp-t.r{justify-content:flex-end;text-align:right}
+.sp-t img,.sp-race img,.sp-tp img{width:22px;height:22px;object-fit:contain;flex:none}
+.sp-m > b{font:800 20px var(--f-mono);min-width:1.4em;text-align:center}.sp-m > b.w{color:var(--accent)}
+.sp-st{font-size:12px;font-weight:700;color:var(--muted);text-align:center;white-space:nowrap}.sp-st.in{color:#e5484d}
+.sp-note{font-size:12px;font-weight:700;color:var(--muted)}.sp-note.live{color:#e5484d}
+.sp-race{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.sp-race li{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:10px;padding:6px 10px;font-size:14px}
+.sp-race li .muted{font-size:12px;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sp-pos{font:800 13px var(--f-mono);min-width:1.6em;color:var(--accent)}.sp-gap{margin-left:auto;font:700 12px var(--f-mono)}
+.sp-next{font-size:14px}.sp-sess{display:flex;flex-wrap:wrap;gap:6px}.sp-sess span{background:var(--surface-2);border-radius:8px;padding:4px 8px;font-size:12px}
+.sp-ten{background:var(--surface-2);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:3px}
+.sp-tp{display:flex;align-items:center;gap:8px;font-size:14px}.sp-tp span{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.sp-tp b{font:700 13px var(--f-mono);min-width:1.2em;text-align:center}
+.sp-tp.w span{font-weight:800}
+.sp-later{display:flex;flex-direction:column;gap:10px}
+@media (max-width:520px){.sp-grid{grid-template-columns:1fr}.sp-m > b{font-size:17px}}
 .coach.hot{background:color-mix(in srgb,var(--gold) 18%,var(--surface));animation:pop .25s ease-out}
 
 /* ---------- Customize ---------- */
@@ -965,6 +996,7 @@ body.landing-open{overflow:hidden}
     <button class="nav desk-only" data-nav="analysis" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/></svg>Analysis</button>
     <div class="nav-group desk-only">Discover</div>
     <button class="nav desk-only" data-nav="world" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>World</button>
+    <button class="nav desk-only" data-nav="sports" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>Sport</button>
     <button class="nav desk-only" data-nav="legends" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M4 10h16M12 3l9 5H3zM6 10v8M10 10v8M14 10v8M18 10v8"/></svg>Legends</button>
     <div class="nav-group desk-only">You</div>
     <button class="nav desk-only" data-nav="history" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>My games</button>
@@ -992,6 +1024,7 @@ body.landing-open{overflow:hidden}
     <section class="screen" id="scr-legends" hidden></section>
     <section class="screen" id="scr-customize" hidden></section>
     <section class="screen" id="scr-friends" hidden></section>
+    <section class="screen" id="scr-sports" hidden></section>
   </main>
 </div>
 
@@ -14155,6 +14188,7 @@ function renderHome(){
       ${profile.history.length >= 2 ? `<div class="hero-chart">${ratingChart(360, 96)}</div>` : '<div class="hero-chart empty"><div class="hero-tip">Win rated games to climb. Your rating graph appears here.</div></div>'}
       <div class="hero-cta">${active ? '<button class="btn pop big" id="hmContinue" type="button">Continue game</button>' : ''}<button class="btn ${active ? 'violet' : 'pop'} big" id="hmPlay" type="button">Play</button></div>
     </section>
+    ${GW.sportsStrip ? GW.sportsStrip() : ''}
     ${homeExtras()}
     <section class="goals-card">
       <div class="goals-head"><div><div class="kicker">Today’s goals</div><h2>${goalsDone === 3 ? 'All done. See you tomorrow!' : `${goalsDone} of 3 done`}</h2></div>
@@ -14196,6 +14230,7 @@ $('scr-home').addEventListener('click', e => {
   GW.show(go);
 });
 GW.register('home', {onShow: renderHome});
+GW.renderHome = () => { if (GW.currentScreen() === 'home') renderHome(); };
 
 /* ============================== PUZZLES ============================== */
 $('scr-puzzles').innerHTML = `
@@ -15008,7 +15043,7 @@ document.querySelector('.rail').addEventListener('click', e => {
   const n = b.dataset.nav;
   if (n === 'settings') return openSettings();
   if (n === 'more'){
-    const items = [['friends', '👥', 'Friends'], ['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
+    const items = [['friends', '👥', 'Friends'], ['sports', '🏟️', 'Sport'], ['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
     const m = GW.modal(`<h2>More</h2><div class="more-grid">${items.map(([k, i, t]) => `<button class="more-item" type="button" data-more="${k}"><span>${i}</span>${t}</button>`).join('')}</div>`);
     m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else if (x.dataset.more === 'exit') GW.confirmExit(); else GW.show(x.dataset.more); });
     return;
@@ -16313,6 +16348,255 @@ GW.register('friends', {onShow: () => { UI.err = ''; UI.tourErr = ''; render(); 
 GW.social = {myCode, friends, addByCode, joinTour, createTour, startTour, state: () => ({H, TP, ST})};
 // Listen for friends as soon as the app is open (after a moment, so start-up stays quick)
 if (P2P.supported()) setTimeout(ensurePeer, 2500);
+})();
+
+</script>
+<script>/* sports.js */
+/* Elite Chess: the world's top sporting events while they are on, with live scores. Formula 1 and MotoGP race
+   weekends, tennis Grand Slams, golf majors, the FIFA World Cup, Super Bowl, World Series, NBA Finals, Stanley Cup
+   Final, Champions League final, AFL and NRL Grand Finals, big cricket tournaments, numbered UFC events and the
+   Rugby World Cup. Scores come from ESPN's public scoreboards (read straight from the page); MotoGP comes from
+   sports/motogp.json on the website, which a GitHub workflow refreshes on race weekends.
+   Only the top events are shown: live first, then starting soon, then just finished, ordered by what matters in
+   the player's country. Feeds are only read in their season, every 30 s while something is live, every 10 min
+   otherwise, and only while Home or the Sport screen is on screen. */
+(() => {
+const GW = window.GW;
+const {$, esc} = GW;
+const framed = !!(window.claude && typeof window.claude.use === 'function');
+const ESPN = 'https://site.web.api.espn.com/apis/site/v2/sports/', TICKER = 'https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=';
+const MOTOGP = /^https?:$/.test(location.protocol) && /elitechess\.online$/.test(location.hostname) ? 'sports/motogp.json' : 'https://elitechess.online/sports/motogp.json';
+const H = 3600e3, DAY = 24 * H;
+const notes = e => ((e.competitions && e.competitions[0] && e.competitions[0].notes) || []).map(n => n.headline).join(' ');
+const postSeason = e => e.season && (e.season.type === 3 || /post/.test(e.season.slug || ''));
+
+/* ---------- the top events, and how to recognise them in each feed ----------
+   kind: match (two teams), race, golf, fights, tennis, cricket, motogp
+   months: only read the feed in these months (1-12); lead: show this many days before it starts */
+const FEEDS = [
+  {id:'f1', name:'Formula 1', icon:'🏎️', kind:'race', url:ESPN + 'racing/f1/scoreboard', lead:4, top:() => true},
+  {id:'motogp', name:'MotoGP', icon:'🏍️', kind:'motogp', url:MOTOGP, lead:4},
+  {id:'tennis', name:'Tennis', icon:'🎾', kind:'tennis', url:TICKER + 'tennis', lead:1},
+  {id:'golf', name:'Golf', icon:'⛳', kind:'golf', url:ESPN + 'golf/pga/scoreboard', months:[4, 5, 6, 7], lead:3, top:e => /^(Masters Tournament|PGA Championship|U\.S\. Open|The Open)\b/.test(e.name)},
+  {id:'wc', name:'FIFA World Cup', icon:'🏆', kind:'match', url:ESPN + 'soccer/fifa.world/scoreboard', lead:2, top:() => true, many:true},
+  {id:'wwc', name:'FIFA Women’s World Cup', icon:'🏆', kind:'match', url:ESPN + 'soccer/fifa.wwc/scoreboard', months:[6, 7, 8], lead:2, top:() => true, many:true},
+  {id:'euro', name:'UEFA Euro', icon:'⚽', kind:'match', url:ESPN + 'soccer/uefa.euro/scoreboard', months:[6, 7], lead:2, top:() => true, many:true},
+  {id:'copa', name:'Copa América', icon:'⚽', kind:'match', url:ESPN + 'soccer/conmebol.america/scoreboard', months:[6, 7], lead:2, top:() => true, many:true},
+  {id:'ucl', name:'Champions League Final', icon:'⚽', kind:'match', url:ESPN + 'soccer/uefa.champions/scoreboard', months:[5, 6], lead:7, top:e => /final/.test((e.season || {}).slug || '')},
+  {id:'nfl', name:'Super Bowl', icon:'🏈', kind:'match', url:ESPN + 'football/nfl/scoreboard', months:[1, 2], lead:10, top:e => /Super Bowl/i.test(notes(e))},
+  {id:'afl', name:'AFL Grand Final', icon:'🏉', kind:'match', url:ESPN + 'australian-football/afl/scoreboard', months:[9, 10], lead:7, top:(e, all) => /\bGF\b|Grand Final/i.test(notes(e)) || (postSeason(e) && all.length === 1)},
+  {id:'nrl', name:'NRL Grand Final', icon:'🏉', kind:'match', url:ESPN + 'rugby-league/3/scoreboard', months:[9, 10], lead:7, top:(e, all) => /Grand Final/i.test(notes(e)) || (postSeason(e) && all.length === 1)},
+  {id:'mlb', name:'World Series', icon:'⚾', kind:'match', url:ESPN + 'baseball/mlb/scoreboard', months:[10, 11], lead:2, top:e => /World Series/i.test(notes(e))},
+  {id:'nba', name:'NBA Finals', icon:'🏀', kind:'match', url:ESPN + 'basketball/nba/scoreboard', months:[5, 6], lead:2, top:e => /NBA Finals/i.test(notes(e))},
+  {id:'nhl', name:'Stanley Cup Final', icon:'🏒', kind:'match', url:ESPN + 'hockey/nhl/scoreboard', months:[5, 6], lead:2, top:e => /Stanley Cup Final/i.test(notes(e))},
+  {id:'rwc', name:'Rugby World Cup', icon:'🏉', kind:'match', url:ESPN + 'rugby/164205/scoreboard', months:[9, 10, 11], lead:2, top:() => true, many:true},
+  {id:'ufc', name:'UFC', icon:'🥊', kind:'fights', url:ESPN + 'mma/ufc/scoreboard', lead:3, top:e => /^UFC \d+/.test(e.name)},
+  {id:'cricket', name:'Cricket', icon:'🏏', kind:'cricket', url:TICKER + 'cricket', lead:1, league:/World Cup|Ashes|Champions Trophy|World Test Championship|Border-Gavaskar/i}
+];
+// what people follow most, by country (the rest come after)
+const FAVS = {
+  AU:['afl', 'nrl', 'cricket', 'motogp', 'tennis', 'f1', 'rwc', 'golf'], NZ:['rwc', 'cricket', 'nrl', 'f1'], US:['nfl', 'mlb', 'nba', 'nhl', 'golf', 'ufc', 'f1', 'wc'], CA:['nhl', 'nba', 'mlb', 'nfl'],
+  GB:['wc', 'euro', 'ucl', 'cricket', 'f1', 'tennis', 'golf', 'rwc'], IE:['rwc', 'golf', 'ucl'], IN:['cricket', 'f1', 'tennis'], PK:['cricket'], ZA:['rwc', 'cricket', 'golf'],
+  IT:['motogp', 'f1', 'ucl', 'euro'], ES:['motogp', 'f1', 'tennis', 'ucl', 'euro'], FR:['rwc', 'tennis', 'ucl', 'f1'], BR:['wc', 'copa', 'f1'], AR:['wc', 'copa'], MX:['f1', 'wc'], DE:['euro', 'ucl', 'f1'], NL:['f1', 'euro']
+};
+const SPORT_OF = id => FEEDS.find(f => f.id === id);
+
+/* ---------- reading the feeds ---------- */
+const S = {raw:{}, at:{}, live:{}, cards:[], later:[], updated:0, busy:false, err:false};
+try { const c = JSON.parse(localStorage.getItem('gw-sports') || 'null'); if (c && Date.now() - c.updated < 6 * H){ S.cards = c.cards || []; S.later = c.later || []; S.updated = c.updated; } } catch (_) {}
+const inSeason = f => !f.months || f.months.includes(new Date().getMonth() + 1);
+async function getJSON(url){
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const t = setTimeout(() => ctl && ctl.abort(), 15000);
+  try { const r = await fetch(url + (url.includes('?') ? '&' : '?') + '_=' + Math.floor(Date.now() / 30000), ctl ? {signal:ctl.signal} : {}); if (!r.ok) throw new Error(r.status); return await r.json(); }
+  finally { clearTimeout(t); }
+}
+async function refresh(force = false){
+  if (S.busy || framed || !navigator.onLine) return;
+  S.busy = true;
+  const now = Date.now();
+  const due = FEEDS.filter(f => inSeason(f) && (force || !S.at[f.id] || now - S.at[f.id] > (S.live[f.id] ? 25000 : 10 * 60e3)));
+  let ok = 0;
+  await Promise.all(due.map(async f => { try { S.raw[f.id] = await getJSON(f.url); S.at[f.id] = Date.now(); ok++; } catch (_) {} }));
+  if (due.length && !ok && !S.cards.length) S.err = true; else S.err = false;
+  if (ok){ build(); S.updated = Date.now(); try { localStorage.setItem('gw-sports', JSON.stringify({cards:S.cards, later:S.later, updated:S.updated})); } catch (_) {} }
+  S.busy = false;
+  paint();
+}
+
+/* ---------- turning feeds into cards ---------- */
+const img = u => typeof u === 'string' && /^https:\/\/a\.espncdn\.com\//.test(u) ? u : '';
+const stateOf = st => st === 'in' ? 'in' : st === 'post' ? 'post' : 'pre';
+// show it if it's live, starts soon, or finished in the last day and a half
+function relevant(state, start, lead, end){
+  const now = Date.now();
+  if (state === 'in') return true;
+  if (state === 'pre') return start - now < lead * DAY && start - now > -12 * H;
+  return now - (end || start) < 36 * H;
+}
+function teamMatch(e){
+  const c = e.competitions[0], st = c.status.type;
+  // long names ("Brisbane Lions") give way to the club name ("Lions") so scores stay readable on phones
+  const side = t => ({name:(t.team.shortDisplayName || t.team.displayName || '').length > 11 ? (t.team.name || t.team.abbreviation || t.team.shortDisplayName) : (t.team.shortDisplayName || t.team.displayName), abbr:t.team.abbreviation, logo:img(t.team.logo), score:t.score, win:!!t.winner});
+  const home = c.competitors.find(t => t.homeAway === 'home') || c.competitors[0], away = c.competitors.find(t => t !== home);
+  return {a:side(away), b:side(home), state:stateOf(st.state), status:st.shortDetail, date:Date.parse(e.date), note:notes(e), venue:(c.venue || {}).fullName || ''};
+}
+function build(){
+  const cards = [], later = [], country = (GW.profile && GW.profile.country) || '';
+  for (const f of FEEDS){
+    const d = S.raw[f.id];
+    if (!d) continue;
+    try {
+      if (f.kind === 'match'){
+        const evs = (d.events || []).filter(e => f.top(e, d.events)).map(teamMatch).filter(m => relevant(m.state, m.date, f.lead));
+        if (!evs.length){ S.live[f.id] = false; continue; }
+        evs.sort((x, y) => (x.state === 'in' ? -1 : 0) - (y.state === 'in' ? -1 : 0) || x.date - y.date);
+        const title = f.many ? f.name : (evs[0].note.split(' - ')[0] || f.name).replace(/^GF\b.*/, f.name);
+        cards.push({id:f.id, icon:f.icon, sport:f.name, title, kind:'match', state:best(evs), date:evs[0].date, matches:evs.slice(0, f.many ? 8 : 3)});
+      } else if (f.kind === 'race'){
+        for (const e of d.events || []){
+          const sess = (e.competitions || []).map(c => ({label:(c.type || {}).abbreviation || 'Session', date:Date.parse(c.date), state:stateOf(c.status.type.state), status:c.status.type.shortDetail,
+            rows:(c.competitors || []).slice().sort((x, y) => (x.order || 99) - (y.order || 99)).slice(0, 10).map(x => ({pos:x.order, name:(x.athlete || {}).displayName || '', team:((x.vehicle || {}).manufacturer) || (x.team || {}).displayName || '', flag:img(((x.athlete || {}).flag || {}).href)}))}));
+          if (!sess.length) continue;
+          const live = sess.find(s => s.state === 'in'), last = sess.filter(s => s.state === 'post').pop(), next = sess.find(s => s.state === 'pre');
+          const state = live ? 'in' : next ? 'pre' : 'post', start = sess[0].date, end = sess[sess.length - 1].date + 3 * H;
+          if (!relevant(state === 'pre' && last ? 'in' : state, next ? next.date : start, f.lead, end)) continue;
+          cards.push({id:f.id, icon:f.icon, sport:f.name, title:e.name.replace(/^(MSC Cruises|Qatar Airways|Heineken|Aramco|Gulf Air|STC|Crypto\.com|Lenovo|Pirelli|Moët & Chandon|AWS|Tag Heuer|Singapore Airlines|Etihad Airways|Formula 1)\s+/i, ''),
+            sub:(e.circuit || {}).fullName || '', kind:'race', state: live ? 'in' : state === 'pre' && last ? 'weekend' : state, date:(live || next || last || sess[0]).date, live, last, next, sessions:sess.map(({label, date, state}) => ({label, date, state}))});
+        }
+        for (const c of (d.leagues && d.leagues[0] && d.leagues[0].calendar) || []) if (c.startDate && Date.parse(c.startDate) > Date.now() + f.lead * DAY){ later.push({id:f.id, icon:f.icon, sport:f.name, title:String(c.label || '').replace(/^(MSC Cruises|Qatar Airways|Heineken|Aramco|Gulf Air|STC|Crypto\.com|Lenovo|Pirelli|Moët & Chandon|AWS|Tag Heuer|Singapore Airlines|Etihad Airways)\s+/i, ''), date:Date.parse(c.startDate)}); break; }
+      } else if (f.kind === 'golf'){
+        for (const e of (d.events || []).filter(f.top)){
+          const c = e.competitions[0], st = c.status.type, state = stateOf(st.state);
+          if (!relevant(state, Date.parse(e.date), f.lead, Date.parse(e.endDate || e.date) + DAY)) continue;
+          cards.push({id:f.id, icon:f.icon, sport:'Golf major', title:e.name, kind:'golf', state, date:Date.parse(e.date), status:st.shortDetail,
+            rows:(c.competitors || []).slice().sort((x, y) => (x.order || 999) - (y.order || 999)).slice(0, 6).map(x => ({pos:x.order, name:(x.athlete || {}).displayName || '', score:x.score, flag:img(((x.athlete || {}).flag || {}).href)}))});
+        }
+        for (const c of (d.leagues && d.leagues[0] && d.leagues[0].calendar) || []) if (f.top({name:c.label || ''}) && Date.parse(c.startDate) > Date.now() + f.lead * DAY){ later.push({id:f.id, icon:f.icon, sport:'Golf major', title:c.label, date:Date.parse(c.startDate)}); break; }
+      } else if (f.kind === 'fights'){
+        for (const e of (d.events || []).filter(f.top)){
+          const comps = e.competitions || [], state = comps.some(c => c.status.type.state === 'in') ? 'in' : comps.every(c => c.status.type.state === 'post') ? 'post' : 'pre';
+          if (!relevant(state, Date.parse(e.date), f.lead)) continue;
+          cards.push({id:f.id, icon:f.icon, sport:'UFC', title:e.name, kind:'fights', state, date:Date.parse(e.date),
+            fights:comps.slice(-4).reverse().map(c => ({weight:(c.type || {}).abbreviation || '', a:c.competitors.map(x => ({name:(x.athlete || {}).displayName || '', win:!!x.winner})), status:c.status.type.shortDetail, state:stateOf(c.status.type.state)}))});
+        }
+      } else if (f.kind === 'tennis'){
+        // Grand Slams only: one card per tournament, singles matches, live ones first
+        const byT = new Map();
+        for (const l of (d.sports && d.sports[0] && d.sports[0].leagues) || []) for (const e of l.events || []){
+          if (!e.major || !/singles/i.test((e.competitionType || {}).text || '')) continue;
+          const t = byT.get(e.name) || []; t.push({tour:l.abbreviation || l.name, round:(e.round || {}).displayName || '', type:(e.competitionType || {}).text || '', state:stateOf(e.status), status:e.summary || ((e.fullStatus || {}).type || {}).shortDetail || '',
+            date:Date.parse(e.date), p:(e.competitors || []).map(x => ({name:x.displayName || x.name || '', win:!!x.winner, sets:(x.linescores || []).map(s => s.value), flag:img(x.flag && x.flag.href || x.logo)}))}); byT.set(e.name, t);
+        }
+        for (const [name, ms] of byT){
+          const rel = ms.filter(m => relevant(m.state, m.date, f.lead));
+          if (!rel.length) continue;
+          rel.sort((x, y) => (x.state === 'in' ? -1 : x.state === 'pre' ? 1 : 0) - (y.state === 'in' ? -1 : y.state === 'pre' ? 1 : 0) || x.date - y.date);
+          cards.push({id:f.id, icon:f.icon, sport:'Grand Slam', title:name, kind:'tennis', state:best(rel), date:rel[0].date, matches:rel.slice(0, 8)});
+        }
+      } else if (f.kind === 'cricket'){
+        for (const l of (d.sports && d.sports[0] && d.sports[0].leagues) || []){
+          if (!f.league.test(l.name || '')) continue;
+          const ms = (l.events || []).map(e => ({title:e.name, state:stateOf(e.status), status:((e.fullStatus || {}).longSummary) || e.summary || '', date:Date.parse(e.date), desc:e.description || '',
+            t:(e.competitors || []).map(x => ({name:x.displayName || x.name || '', score:x.score || '', logo:img(x.logo), win:!!x.winner}))})).filter(m => relevant(m.state, m.date, f.lead, m.date + 4 * DAY));
+          if (ms.length) cards.push({id:f.id, icon:f.icon, sport:'Cricket', title:l.name, kind:'cricket', state:best(ms), date:ms[0].date, matches:ms.slice(0, 4)});
+        }
+      } else if (f.kind === 'motogp'){
+        const now = Date.now();
+        for (const e of d.events || []){
+          const sess = (e.sessions || []).map(s => ({label:s.label, type:s.type, date:Date.parse(s.date), status:s.status, rows:s.results || []}));
+          const live = sess.find(s => s.status && !/NOT-STARTED|FINISHED/.test(s.status) && now - s.date < 3 * H && now >= s.date);
+          const done = sess.filter(s => s.status === 'FINISHED'), next = sess.find(s => s.status === 'NOT-STARTED' && s.date > now - H);
+          const start = Date.parse(e.start), end = Date.parse(e.end) + DAY;
+          const state = live ? 'in' : done.length && next ? 'weekend' : done.length ? 'post' : 'pre';
+          if (!relevant(state === 'weekend' ? 'in' : state, next ? next.date : start, f.lead, end)) { if (state === 'pre' && start > now && !later.some(x => x.id === 'motogp')) later.push({id:f.id, icon:f.icon, sport:f.name, title:e.name, date:start}); continue; }
+          const last = done.filter(s => s.rows.length).pop();
+          cards.push({id:f.id, icon:f.icon, sport:f.name, title:titleCase(e.name), sub:e.circuit, kind:'race', state, date:(live || next || last || sess[0] || {date:start}).date,
+            live: live && {label:live.label, rows:live.rows, status:'Live'}, last: last && {label:last.label, rows:last.rows, status:'Final'}, next, sessions:sess.map(({label, date, status}) => ({label, date, state:status === 'FINISHED' ? 'post' : 'pre'})), delayed:true});
+        }
+        if (d.last && !cards.some(c => c.id === 'motogp')){
+          const race = (d.last.sessions || []).find(s => s.type === 'RAC' && (s.results || []).length);
+          if (race && Date.now() - Date.parse(race.date) < 36 * H) cards.push({id:f.id, icon:f.icon, sport:f.name, title:titleCase(d.last.name), sub:d.last.circuit, kind:'race', state:'post', date:Date.parse(race.date), last:{label:'Race', rows:race.results, status:'Final'}, sessions:[]});
+        }
+      }
+      S.live[f.id] = cards.some(c => c.id === f.id && (c.state === 'in' || c.state === 'weekend'));
+    } catch (_) {}
+  }
+  const fav = FAVS[country] || [];
+  const rank = c => (c.state === 'in' ? 0 : c.state === 'weekend' ? 1 : c.state === 'pre' ? 2 : 3) * 100 + (fav.includes(c.id) ? fav.indexOf(c.id) : 50);
+  S.cards = cards.sort((a, b) => rank(a) - rank(b) || a.date - b.date);
+  S.later = later.filter(l => !cards.some(c => c.id === l.id)).sort((a, b) => a.date - b.date);
+}
+const best = ms => ms.some(m => m.state === 'in') ? 'in' : ms.some(m => m.state === 'pre') ? (ms.some(m => m.state === 'post') ? 'weekend' : 'pre') : 'post';
+const titleCase = s => String(s || '').toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase()).replace(/\bOf\b/g, 'of').replace(/\bGp\b/g, 'GP');
+
+/* ---------- drawing ---------- */
+const fmtTime = t => { const d = new Date(t), now = new Date(), days = Math.round((new Date(d.toDateString()) - new Date(now.toDateString())) / DAY);
+  const hm = d.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+  return days === 0 ? `Today ${hm}` : days === 1 ? `Tomorrow ${hm}` : days > 1 && days < 7 ? `${d.toLocaleDateString(undefined, {weekday:'long'})} ${hm}` : d.toLocaleDateString(undefined, {day:'numeric', month:'short'}) + ' ' + hm; };
+const badge = st => st === 'in' ? '<span class="sp-live">● LIVE</span>' : st === 'weekend' ? '<span class="sp-on">ON NOW</span>' : st === 'post' ? '<span class="sp-done">RESULT</span>' : '<span class="sp-soon">SOON</span>';
+const logo = u => u ? `<img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+function matchRow(m){
+  const sc = (t, o) => m.state === 'pre' ? '' : `<b class="${t.win || (m.state === 'post' && +t.score > +o.score) ? 'w' : ''}">${esc(t.score || '0')}</b>`;
+  return `<div class="sp-m"><span class="sp-t">${logo(m.a.logo)}${esc(m.a.name)}</span>${sc(m.a, m.b)}<span class="sp-st ${m.state}">${m.state === 'pre' ? esc(fmtTime(m.date)) : esc(m.status)}</span>${sc(m.b, m.a)}<span class="sp-t r">${esc(m.b.name)}${logo(m.b.logo)}</span></div>`;
+}
+function raceRows(s){ return `<ol class="sp-race">${s.rows.slice(0, 5).map(r => `<li><span class="sp-pos">${esc(r.pos || '')}</span>${logo(r.flag)}<b>${esc(r.name)}</b><span class="muted">${esc(r.team || '')}</span>${r.time ? `<span class="sp-gap">${esc(r.time)}</span>` : ''}</li>`).join('')}</ol>`; }
+function detail(c){
+  if (c.kind === 'match') return c.matches.map(m => `${!c.title.includes(m.note) && m.note && c.matches.length < 4 ? `<div class="sp-note">${esc(m.note)}</div>` : ''}${matchRow(m)}`).join('');
+  if (c.kind === 'race'){
+    let h = '';
+    if (c.live && c.live.rows.length) h += `<div class="sp-note">${esc(c.live.label)} · live${c.delayed ? ' (updates every 15 min)' : ''}</div>${raceRows(c.live)}`;
+    else if (c.live) h += `<div class="sp-note">${esc(c.live.label)} is on now</div>`;
+    if (!c.live && c.last && c.last.rows.length) h += `<div class="sp-note">${esc(c.last.label)} result</div>${raceRows(c.last)}`;
+    if (c.next && c.state !== 'post') h += `<div class="sp-next">Next: <b>${esc(c.next.label)}</b> · ${esc(fmtTime(c.next.date))}</div>`;
+    if (c.state === 'pre' && c.sessions.length) h += `<div class="sp-sess">${c.sessions.map(s => `<span>${esc(s.label)} <b>${esc(fmtTime(s.date))}</b></span>`).join('')}</div>`;
+    return h;
+  }
+  if (c.kind === 'golf') return `<div class="sp-note">${esc(c.state === 'pre' ? 'Starts ' + fmtTime(c.date) : c.status)}</div>${c.rows.length ? `<ol class="sp-race">${c.rows.map(r => `<li><span class="sp-pos">${esc(r.pos || '')}</span>${logo(r.flag)}<b>${esc(r.name)}</b><span class="sp-gap">${esc(r.score || '')}</span></li>`).join('')}</ol>` : ''}`;
+  if (c.kind === 'fights') return c.fights.map(f => `<div class="sp-m fight"><span class="sp-t">${f.a[0] ? `${f.a[0].win ? '🏆 ' : ''}${esc(f.a[0].name)}` : ''}</span><span class="sp-st ${f.state}">${esc(f.state === 'pre' ? f.weight : f.status)}</span><span class="sp-t r">${f.a[1] ? `${esc(f.a[1].name)}${f.a[1].win ? ' 🏆' : ''}` : ''}</span></div>`).join('');
+  if (c.kind === 'tennis') return c.matches.map(m => `<div class="sp-ten"><div class="sp-note">${esc(m.tour)} · ${esc(m.round)}${m.state === 'pre' ? ' · ' + esc(fmtTime(m.date)) : ''}</div>${m.p.map(p => `<div class="sp-tp${p.win ? ' w' : ''}">${logo(p.flag)}<span>${esc(p.name)}</span>${p.sets.map(v => `<b>${esc(v)}</b>`).join('')}</div>`).join('')}${m.state === 'in' && m.status ? `<div class="sp-note live">${esc(m.status)}</div>` : ''}</div>`).join('');
+  if (c.kind === 'cricket') return c.matches.map(m => `<div class="sp-ten"><div class="sp-note">${esc(m.desc)}</div>${m.t.map(t => `<div class="sp-tp${t.win ? ' w' : ''}">${logo(t.logo)}<span>${esc(t.name)}</span><b>${esc(t.score)}</b></div>`).join('')}<div class="sp-note${m.state === 'in' ? ' live' : ''}">${esc(m.state === 'pre' ? fmtTime(m.date) : m.status)}</div></div>`).join('');
+  return '';
+}
+// one line for the Home strip
+function headline(c){
+  if (c.kind === 'match'){ const m = c.matches[0]; return m.state === 'pre' ? `${m.a.name} v ${m.b.name} · ${fmtTime(m.date)}` : `${m.a.name} ${m.a.score} – ${m.b.score} ${m.b.name} · ${m.status}`; }
+  if (c.kind === 'race'){ const s = c.live && c.live.rows.length ? c.live : c.last && c.last.rows.length && !c.live ? c.last : null;
+    if (s) return `${s === c.live ? s.label + ': ' : s.label + ': '}${s.rows.slice(0, 3).map(r => `${r.pos} ${String(r.name).split(' ').pop()}`).join(' · ')}`;
+    return c.next ? `${c.next.label} · ${fmtTime(c.next.date)}` : c.sub || ''; }
+  if (c.kind === 'golf') return c.rows.length ? c.rows.slice(0, 3).map(r => `${r.pos} ${String(r.name).split(' ').pop()} ${r.score}`).join(' · ') : `Starts ${fmtTime(c.date)}`;
+  if (c.kind === 'fights'){ const f = c.fights[0]; return f ? `${f.a.map(x => x.name).join(' v ')} · ${f.state === 'pre' ? fmtTime(c.date) : f.status}` : ''; }
+  if (c.kind === 'tennis'){ const m = c.matches[0]; return `${m.p.map(p => p.name.split(' ').pop()).join(' v ')} · ${m.state === 'pre' ? fmtTime(m.date) : m.state === 'in' ? 'Live' : 'Final'}`; }
+  if (c.kind === 'cricket'){ const m = c.matches[0]; return `${m.t.map(t => `${t.name} ${t.score}`).join(' v ')}`; }
+  return '';
+}
+const updatedLine = () => S.updated ? `Updated ${new Date(S.updated).toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'})}${Object.values(S.live).some(Boolean) ? ' · live scores refresh every 30 s' : ''}` : '';
+GW.sportsStrip = () => {
+  if (framed || !S.cards.length) return '';
+  return `<section class="sp-strip"><div class="row"><div class="grow"><div class="kicker">Sport now</div></div><button class="btn ghost" type="button" data-go="sports">All sport →</button></div>
+    <div class="sp-chips">${S.cards.slice(0, 3).map(c => `<button class="sp-chip" type="button" data-go="sports"><span class="sp-ico">${c.icon}</span><span class="grow"><span class="sp-k">${badge(c.state)} ${esc(c.sport)}</span><b>${esc(c.title)}</b><span class="muted small">${esc(headline(c))}</span></span></button>`).join('')}</div></section>`;
+};
+function paint(){
+  const scr = GW.currentScreen();
+  if (scr === 'home'){ const el = document.querySelector('.sp-strip'), html = GW.sportsStrip(); if (el && html) el.outerHTML = html; else if (!el && html && GW.renderHome) GW.renderHome(); else if (el && !html) el.remove(); }
+  if (scr !== 'sports') return;
+  const live = S.cards.filter(c => c.state === 'in' || c.state === 'weekend'), soon = S.cards.filter(c => c.state === 'pre'), done = S.cards.filter(c => c.state === 'post');
+  const sec = (title, list) => list.length ? `<h2 class="sp-h">${title}</h2><div class="sp-grid">${list.map(c => `<article class="panel sp-card ${c.state}"><div class="sp-head"><span class="sp-ico big">${c.icon}</span><div class="grow"><div class="sp-k">${badge(c.state)} ${esc(c.sport)}</div><h3>${esc(c.title)}</h3>${c.sub ? `<div class="muted small">${esc(c.sub)}</div>` : ''}</div></div>${detail(c)}</article>`).join('')}</div>` : '';
+  $('scr-sports').innerHTML = `<div class="page-head"><div><div class="kicker">The world’s top events</div><h1>Sport</h1><div class="muted small">${esc(updatedLine())}</div></div><button class="btn" type="button" id="spRefresh">${S.busy ? 'Updating…' : 'Refresh'}</button></div>
+    ${framed ? '<div class="panel">Live sport works in the Android app and on elitechess.online.</div>' : ''}
+    ${sec('Live now', live)}${sec('Coming up', soon)}${sec('Results', done)}
+    ${!S.cards.length && !framed ? `<div class="panel empty-state"><div style="font-size:44px">🏟️</div><h2>${S.busy ? 'Checking what’s on…' : S.err ? 'Can’t reach the scores right now' : 'No top events right now'}</h2><p class="muted">${S.err ? 'Check your internet connection.' : 'Big events appear here while they’re on: Grand Prix weekends, Grand Slams, golf majors, World Cups, the Super Bowl, Grand Finals and more.'}</p></div>` : ''}
+    ${S.later.length ? `<h2 class="sp-h">Later</h2><div class="panel sp-later">${S.later.slice(0, 6).map(l => `<div class="row"><span class="sp-ico">${l.icon}</span><span class="grow"><b>${esc(l.title)}</b> <span class="muted small">${esc(l.sport)}</span></span><span class="muted small">${esc(new Date(l.date).toLocaleDateString(undefined, {day:'numeric', month:'short'}))}</span></div>`).join('')}</div>` : ''}
+    <p class="muted small">Scores from ESPN; MotoGP from motogp.com (updates every 15 minutes on race weekends). Times are shown in your time zone.</p>`;
+  $('spRefresh').addEventListener('click', () => { refresh(true); paint(); });
+}
+$('scr-sports').innerHTML = '';
+// keep scores fresh only while they're on screen
+setInterval(() => { if (document.visibilityState === 'visible' && ['home', 'sports'].includes(GW.currentScreen())) refresh(); }, 15000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ['home', 'sports'].includes(GW.currentScreen())) refresh(); });
+GW.register('sports', {onShow: () => { paint(); refresh(); }});
+setTimeout(() => refresh(), 3000);
+GW.sports = {refresh, state: () => S, build};
 })();
 
 </script>

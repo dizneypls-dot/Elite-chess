@@ -67,6 +67,7 @@ function renderHome(){
       ${profile.history.length >= 2 ? `<div class="hero-chart">${ratingChart(360, 96)}</div>` : '<div class="hero-chart empty"><div class="hero-tip">Win rated games to climb. Your rating graph appears here.</div></div>'}
       <div class="hero-cta">${active ? '<button class="btn pop big" id="hmContinue" type="button">Continue game</button>' : ''}<button class="btn ${active ? 'violet' : 'pop'} big" id="hmPlay" type="button">Play</button></div>
     </section>
+    ${GW.sportsStrip ? GW.sportsStrip() : ''}
     ${homeExtras()}
     <section class="goals-card">
       <div class="goals-head"><div><div class="kicker">Today’s goals</div><h2>${goalsDone === 3 ? 'All done. See you tomorrow!' : `${goalsDone} of 3 done`}</h2></div>
@@ -108,6 +109,7 @@ $('scr-home').addEventListener('click', e => {
   GW.show(go);
 });
 GW.register('home', {onShow: renderHome});
+GW.renderHome = () => { if (GW.currentScreen() === 'home') renderHome(); };
 
 /* ============================== PUZZLES ============================== */
 $('scr-puzzles').innerHTML = `
@@ -920,7 +922,7 @@ document.querySelector('.rail').addEventListener('click', e => {
   const n = b.dataset.nav;
   if (n === 'settings') return openSettings();
   if (n === 'more'){
-    const items = [['friends', '👥', 'Friends'], ['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
+    const items = [['friends', '👥', 'Friends'], ['sports', '🏟️', 'Sport'], ['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
     const m = GW.modal(`<h2>More</h2><div class="more-grid">${items.map(([k, i, t]) => `<button class="more-item" type="button" data-more="${k}"><span>${i}</span>${t}</button>`).join('')}</div>`);
     m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else if (x.dataset.more === 'exit') GW.confirmExit(); else GW.show(x.dataset.more); });
     return;
