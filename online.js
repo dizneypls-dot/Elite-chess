@@ -328,13 +328,16 @@ class Peer {
     });
   }
   send(m){ if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(m)); }
-  connect(dst){ const c = new Conn(this, dst, true); this.conns.set(dst, c); c.start(); return c; }
+  // connections are told apart by their id, so two devices calling each other at the same moment both work
+  connect(dst){ const c = new Conn(this, dst, true); this.conns.set(c.id, c); c.start(); return c; }
   signal(m){
-    if (m.type === 'EXPIRE'){ const c = this.conns.get(m.src); if (c) c.fail('unreachable'); return; }
-    if (m.type === 'LEAVE'){ const c = this.conns.get(m.src); if (c) c.close(); return; }
-    let c = this.conns.get(m.src);
-    if (m.type === 'OFFER' && !c){ c = new Conn(this, m.src, false, m.payload && m.payload.connectionId); this.conns.set(m.src, c); c.start(); this.emit('connection', c); }
-    if (c){ if (m.type === 'ANSWER') this.reached = true; c.handle(m); }
+    const from = [...this.conns.values()].filter(c => c.remote === m.src);
+    if (m.type === 'EXPIRE'){ from.forEach(c => c.fail('unreachable')); return; }
+    if (m.type === 'LEAVE'){ from.forEach(c => c.close()); return; }
+    const id = m.payload && m.payload.connectionId;
+    let c = id ? this.conns.get(id) : from[0];
+    if (m.type === 'OFFER' && !c && id){ c = new Conn(this, m.src, false, id); this.conns.set(id, c); c.start(); this.emit('connection', c); }
+    if (c && c.remote === m.src){ if (m.type === 'ANSWER') this.reached = true; c.handle(m); }
   }
   destroy(){
     clearInterval(this.hb);
@@ -404,7 +407,7 @@ class Conn {
     this.closed = true; clearTimeout(this.timer); clearInterval(this.beat);
     try { if (this.ch) this.ch.close(); } catch (_) {}
     try { if (this.pc) this.pc.close(); } catch (_) {}
-    this.peer.conns.delete(this.remote);
+    this.peer.conns.delete(this.id);
   }
 }
 
