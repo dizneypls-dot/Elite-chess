@@ -297,10 +297,11 @@ async function roomJoinCode(code, token){
 const P = {peer:null};
 const CFG = {host:'0.peerjs.com', port:443, secure:true, path:'/', key:'peerjs'};
 try { const o = JSON.parse(localStorage.getItem('gw-peer') || 'null'); if (o) Object.assign(CFG, o); } catch (_) {}
-const ICE = [
-  {urls:'stun:stun.l.google.com:19302'}, {urls:'stun:stun1.l.google.com:19302'},
-  {urls:['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'], username:'openrelayproject', credential:'openrelayproject'}
-];
+// STUN finds each device's public address; a TURN relay (for networks that block direct connections, like some
+// mobile carriers) can be added in window.GW_CONFIG.turn = [{urls, username, credential}]. The free openrelay
+// service this used to list has shut down.
+const ICE = [{urls:['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302']}, {urls:'stun:stun.cloudflare.com:3478'}]
+  .concat((window.GW_CONFIG && window.GW_CONFIG.turn) || []);
 const p2pSupported = () => typeof RTCPeerConnection === 'function' && typeof WebSocket === 'function';
 const PREFIX = 'greenwood-chess-v1-';
 
@@ -332,8 +333,8 @@ class Peer {
     if (m.type === 'EXPIRE'){ const c = this.conns.get(m.src); if (c) c.fail('unreachable'); return; }
     if (m.type === 'LEAVE'){ const c = this.conns.get(m.src); if (c) c.close(); return; }
     let c = this.conns.get(m.src);
-    if (m.type === 'OFFER' && !c){ c = new Conn(this, m.src, false); this.conns.set(m.src, c); c.start(); this.emit('connection', c); }
-    if (c) c.handle(m);
+    if (m.type === 'OFFER' && !c){ c = new Conn(this, m.src, false, m.payload && m.payload.connectionId); this.conns.set(m.src, c); c.start(); this.emit('connection', c); }
+    if (c){ if (m.type === 'ANSWER') this.reached = true; c.handle(m); }
   }
   destroy(){
     clearInterval(this.hb);
@@ -346,17 +347,23 @@ class Peer {
 }
 
 class Conn {
-  constructor(peer, remote, initiator){ Object.assign(this, {peer, remote, initiator, h:{}, isOpen:false, closed:false, pending:[]}); }
+  constructor(peer, remote, initiator, id){ Object.assign(this, {peer, remote, initiator, id: id || 'dc_' + randStr(11), h:{}, isOpen:false, closed:false, pending:[]}); }
   on(ev, fn){ this.h[ev] = fn; return this; }
   emit(ev, ...a){ if (this.h[ev]) this.h[ev](...a); }
+  // The PeerJS server only passes on messages shaped exactly like the official client's (it drops the rest without an error)
+  signal(type, data){
+    const payload = Object.assign({}, data, {type:'data', connectionId:this.id});
+    if (type === 'OFFER') Object.assign(payload, {label:this.id, reliable:false, serialization:'binary'});
+    this.peer.send({type, payload, dst:this.remote});
+  }
   start(){
     const pc = this.pc = new RTCPeerConnection({iceServers: ICE});
-    pc.onicecandidate = e => { if (e.candidate) this.peer.send({type:'CANDIDATE', dst:this.remote, payload:{candidate: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate}}); };
+    pc.onicecandidate = e => { if (e.candidate) this.signal('CANDIDATE', {candidate: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate}); };
     pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') this.fail('failed'); };
     if (this.initiator){
       this.bind(pc.createDataChannel('greenwood', {ordered:true}));
       pc.createOffer().then(o => pc.setLocalDescription(o))
-        .then(() => this.peer.send({type:'OFFER', dst:this.remote, payload:{sdp: pc.localDescription}}))
+        .then(() => this.signal('OFFER', {sdp: {type: pc.localDescription.type, sdp: pc.localDescription.sdp}}))
         .catch(() => this.fail('offer'));
     } else pc.ondatachannel = e => this.bind(e.channel);
     this.timer = setTimeout(() => { if (!this.isOpen) this.fail('timeout'); }, 15000);
@@ -380,7 +387,7 @@ class Conn {
       if (m.type === 'OFFER'){
         await pc.setRemoteDescription(m.payload.sdp);
         await pc.setLocalDescription(await pc.createAnswer());
-        this.peer.send({type:'ANSWER', dst:this.remote, payload:{sdp: pc.localDescription}});
+        this.signal('ANSWER', {sdp: {type: pc.localDescription.type, sdp: pc.localDescription.sdp}});
         this.flush();
       } else if (m.type === 'ANSWER'){ await pc.setRemoteDescription(m.payload.sdp); this.flush(); }
       else if (m.type === 'CANDIDATE'){
@@ -419,6 +426,7 @@ function dial(peer, dst, ms = 9000){
     c.on('error', () => { clearTimeout(t); resolve(null); });
   });
 }
+const NO_ROUTE = 'Found the other player, but your two networks wouldn’t let the devices connect directly. Try again, or have one of you switch to Wi-Fi.';
 function p2pError(e){
   if (framed) return 'Online play works when you’re signed in to Claude and this app has been shared with you. Sign in, or ask the person who shared it to invite you.';
   if (!p2pSupported()) return 'This browser can’t make direct connections, so online play isn’t available here. Try Chrome or Safari.';
@@ -528,7 +536,7 @@ async function p2pJoinCode(code, token){
     const guest = P.peer = new Peer(`${PREFIX}p-${randStr(10)}`);
     await guest.open();
     if (await tryJoin(guest, [`${PREFIX}inv-${code}`], token)){ refuseExtra(guest); return; }
-    if (token === S.token){ reset(); setState('error', `No open game with the code ${code}. Check the code with your friend.`); }
+    if (token === S.token){ const reached = guest.reached; reset(); setState('error', reached ? NO_ROUTE : `No open game with the code ${code}. Check the code with your friend.`); }
   } catch (e){ if (token === S.token){ reset(); setState('error', p2pError(e)); } }
 }
 
