@@ -186,8 +186,10 @@ button:focus-visible,.tile:focus-visible,input:focus-visible{outline:3px solid c
 /* ---------- Common layout ---------- */
 .play{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
 @media (min-width:901px){ body[data-screen] main:has(.play:not([hidden])){padding-top:14px;padding-bottom:14px} }
-.board-col{display:flex;flex-direction:column;gap:6px;min-width:0;width:min(100%,var(--board-max));margin-inline:auto}
-.board-col:has(.board-with-bar){width:min(100%,calc(var(--board-max) + 34px))}
+.board-col{display:flex;flex-direction:column;gap:6px;min-width:0;width:min(100%,calc(var(--board-max) - var(--tick,0px)));margin-inline:auto}
+.board-col:has(.board-with-bar){width:min(100%,calc(var(--board-max) - var(--tick,0px) + 34px))}
+/* the live sport strip takes some height, so the board gives it room (not on phones, where width decides) */
+.play:has(.sp-ticker:not([hidden])){--tick:44px}
 .panel{background:var(--surface);border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .play > .panel{position:sticky;top:20px;max-height:calc(100dvh - 40px);overflow-y:auto}
 .play > .panel .moves{flex:1 1 auto;min-height:120px;max-height:none}
@@ -205,6 +207,7 @@ button:focus-visible,.tile:focus-visible,input:focus-visible{outline:3px solid c
 @media (max-width:900px){
   /* Phone: edge-to-edge board, compact player bars, game buttons right under the board */
   :root{--board-max:100vw}
+  .play:has(.sp-ticker:not([hidden])){--tick:0px}
   .board-col{width:calc(100% + 28px);margin-inline:-14px;gap:4px}
   .board-col:has(.board-with-bar){width:calc(100% + 28px)}
   .board-col .frame{border-radius:0;box-shadow:none}
@@ -229,13 +232,17 @@ button:focus-visible,.tile:focus-visible,input:focus-visible{outline:3px solid c
   main{padding:8px 12px}
   /* Player bars sit beside the board, so the board takes the full height */
   :root{--board-max:calc(100dvh - 16px)}
-  .play{grid-template-columns:var(--board-max) minmax(0,1fr);grid-template-rows:auto auto 1fr;gap:6px 12px;align-items:stretch}
+  .play{grid-template-columns:var(--board-max) minmax(0,1fr);grid-template-rows:auto auto auto 1fr;gap:6px 12px;align-items:stretch}
+  .play:has(.sp-ticker:not([hidden])){--tick:0px}
   .play:has(.board-with-bar){grid-template-columns:calc(var(--board-max) + 14px) minmax(0,1fr)}
   .board-col,.board-col:has(.board-with-bar){display:contents}
-  .board-col > :nth-child(2){grid-column:1;grid-row:1 / span 3;width:100%}
-  .board-col > .player:first-child{grid-column:2;grid-row:1;padding:0}
-  .board-col > .player:last-child{grid-column:2;grid-row:2;padding:0}
-  .play > .panel{grid-column:2;grid-row:3;min-height:0;max-height:none;overflow-y:auto;position:static}
+  /* matched by type, not position: the live sport strip (a button) may sit first in the column */
+  .board-col > div:nth-of-type(2){grid-column:1;grid-row:1 / span 4;width:100%}
+  .board-col > .sp-ticker{grid-column:2;grid-row:1;margin:0;width:100%}
+  .sp-ticker .sp-tk b{display:none}
+  .board-col > .player:first-of-type{grid-column:2;grid-row:2;padding:0}
+  .board-col > .player:last-child{grid-column:2;grid-row:3;padding:0}
+  .play > .panel{grid-column:2;grid-row:4;min-height:0;max-height:none;overflow-y:auto;position:static}
   .board-col .frame{border-radius:6px}
   #toasts{bottom:12px;left:auto;right:12px;max-width:300px}
 }
@@ -935,6 +942,20 @@ body.landing-open{overflow:hidden}
 .sp-tp.w span{font-weight:800}
 .sp-later{display:flex;flex-direction:column;gap:10px}
 @media (max-width:520px){.sp-grid{grid-template-columns:1fr}.sp-m > b{font-size:17px}}
+/* live sport score strip above the board during a game */
+.sp-ticker{display:flex;align-items:center;gap:8px;width:100%;min-width:0;border:0;cursor:pointer;font:inherit;text-align:left;color:#fff;background:linear-gradient(90deg,#1c1a3a,#2b2860);border-radius:12px;padding:6px 10px;margin-bottom:6px;box-shadow:0 2px 8px -4px rgba(0,0,0,.4)}
+.sp-ticker[hidden]{display:none}
+.sp-ticker .sp-ico{font-size:18px}
+.sp-ticker .sp-tk{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.sp-ticker .sp-tk span{opacity:.9;font-family:var(--f-mono);font-weight:700}
+.sp-ticker .sp-n{font:700 11px var(--f-mono);opacity:.7}
+.sp-ticker .sp-live,.sp-ticker .sp-on{font:800 10px var(--f-head);letter-spacing:.05em}
+.sp-ticker.flash{animation:spFlash 1.2s ease-out}
+.sp-ticker.swap .sp-tk{animation:spSwap .45s ease-out}
+@keyframes spFlash{0%{box-shadow:0 0 0 3px #ffd23f}100%{box-shadow:0 2px 8px -4px rgba(0,0,0,.4)}}
+@keyframes spSwap{from{transform:translateY(60%);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:900px){.board-col > .sp-ticker{margin:0 12px 4px;width:auto;border-radius:10px}}
+@media (max-width:560px){.sp-ticker .sp-tk b{display:none}}
 .coach.hot{background:color-mix(in srgb,var(--gold) 18%,var(--surface));animation:pop .25s ease-out}
 
 /* ---------- Customize ---------- */
@@ -11703,6 +11724,7 @@ function show(name, arg){
   document.body.dataset.screen = name;
   if (window.GW.renderRailMe) window.GW.renderRailMe();
   if (def.onShow) def.onShow(arg);
+  document.dispatchEvent(new CustomEvent('gw-screen', {detail: name}));
   window.scrollTo(0, 0);
 }
 const currentScreen = () => current;
@@ -11970,6 +11992,7 @@ function configFromSetup(){
 $('scr-game').innerHTML = `
 <div class="play">
   <div class="board-col">
+    <button class="sp-ticker" id="spTicker" type="button" hidden aria-label="Live sport score"></button>
     <div class="player" id="topBar"></div>
     <div id="gameBoard"></div>
     <div class="player" id="botBar"></div>
@@ -16887,7 +16910,44 @@ GW.sportsStrip = () => {
   return `<section class="sp-strip"><div class="row"><div class="grow"><div class="kicker">Sport now</div></div><button class="btn ghost" type="button" data-go="sports">All sport →</button></div>
     <div class="sp-chips">${S.cards.slice(0, 3).map(c => `<button class="sp-chip" type="button" data-go="sports"><span class="sp-ico">${c.icon}</span><span class="grow"><span class="sp-k">${badge(c.state)} ${esc(c.sport)}</span><b>${esc(c.title)}</b><span class="muted small">${esc(headline(c))}</span></span></button>`).join('')}</div></section>`;
 };
+/* ---------- the score strip above the board during a game ---------- */
+// short enough for a phone: team codes for matches ("BL 61–54 FRE · Q3 12:04")
+function tickLine(c){
+  if (c.kind !== 'match') return headline(c);
+  const m = c.matches.find(x => x.state === 'in') || c.matches[0];
+  return m.state === 'pre' ? `${m.a.abbr || m.a.name} v ${m.b.abbr || m.b.name} · ${fmtTime(m.date)}` : `${m.a.abbr || m.a.name} ${m.a.score}–${m.b.score} ${m.b.abbr || m.b.name} · ${m.status}`;
+}
+const T = {turn:0, shown:null};
+const onNow = () => framed ? [] : S.cards.filter(c => c.state === 'in' || c.state === 'weekend');
+function ticker(){
+  const el = $('spTicker');
+  if (!el) return;
+  const live = onNow();
+  if (!live.length){ el.hidden = true; T.shown = null; return; }
+  const c = live[T.turn % live.length], line = tickLine(c), key = c.id + c.title;
+  if (el.dataset.line !== key + line){
+    el.innerHTML = `<span class="sp-ico">${c.icon}</span>${badge(c.state)}<span class="sp-tk"><b>${esc(c.title)}</b> <span>${esc(line)}</span></span>${live.length > 1 ? `<span class="sp-n">${T.turn % live.length + 1}/${live.length}</span>` : ''}`;
+    // the same event with a new score flashes; a different event just slides in
+    el.classList.remove('flash', 'swap'); void el.offsetWidth; el.classList.add(T.shown === key ? 'flash' : 'swap');
+    el.dataset.line = key + line; T.shown = key;
+  }
+  el.dataset.card = S.cards.indexOf(c);
+  el.hidden = false;
+}
+// tapping the strip shows the whole scorecard without leaving the game
+document.addEventListener('click', e => {
+  const t = e.target.closest('#spTicker');
+  if (!t) return;
+  const c = S.cards[+t.dataset.card];
+  if (!c) return;
+  const m = GW.modal(`<div class="sp-head"><span class="sp-ico big">${c.icon}</span><div class="grow"><div class="sp-k">${badge(c.state)} ${esc(c.sport)}</div><h2 style="margin:2px 0 0">${esc(c.title)}</h2>${c.sub ? `<div class="muted small">${esc(c.sub)}</div>` : ''}</div></div>
+    <div class="sp-card" style="gap:8px">${detail(c)}</div><div class="muted small">${esc(updatedLine())}</div>
+    <div class="row"><button class="btn grow" type="button" id="spAll">All sport</button><button class="btn pop grow" type="button" id="spBack">Back to the game</button></div>`);
+  m.querySelector('#spBack').addEventListener('click', () => GW.closeModal());
+  m.querySelector('#spAll').addEventListener('click', () => { GW.closeModal(); GW.show('sports'); });
+});
 function paint(){
+  ticker();
   const scr = GW.currentScreen();
   if (scr === 'home'){ const el = document.querySelector('.sp-strip'), html = GW.sportsStrip(); if (el && html) el.outerHTML = html; else if (!el && html && GW.renderHome) GW.renderHome(); else if (el && !html) el.remove(); }
   if (scr !== 'sports') return;
@@ -16903,8 +16963,12 @@ function paint(){
 }
 $('scr-sports').innerHTML = '';
 // keep scores fresh only while they're on screen
-setInterval(() => { if (document.visibilityState === 'visible' && ['home', 'sports'].includes(GW.currentScreen())) refresh(); }, 15000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ['home', 'sports'].includes(GW.currentScreen())) refresh(); });
+const WATCH = ['home', 'sports', 'game'];
+setInterval(() => { if (document.visibilityState === 'visible' && WATCH.includes(GW.currentScreen())) refresh(); }, 15000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && WATCH.includes(GW.currentScreen())) refresh(); });
+// several live events take turns in the game's score strip
+setInterval(() => { if (GW.currentScreen() === 'game' && document.visibilityState === 'visible'){ T.turn++; ticker(); } }, 7000);
+document.addEventListener('gw-screen', e => { ticker(); if (WATCH.includes(e.detail)) refresh(); });
 GW.register('sports', {onShow: () => { paint(); refresh(); }});
 setTimeout(() => refresh(), 3000);
 GW.sports = {refresh, state: () => S, build};

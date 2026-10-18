@@ -228,7 +228,44 @@ GW.sportsStrip = () => {
   return `<section class="sp-strip"><div class="row"><div class="grow"><div class="kicker">Sport now</div></div><button class="btn ghost" type="button" data-go="sports">All sport →</button></div>
     <div class="sp-chips">${S.cards.slice(0, 3).map(c => `<button class="sp-chip" type="button" data-go="sports"><span class="sp-ico">${c.icon}</span><span class="grow"><span class="sp-k">${badge(c.state)} ${esc(c.sport)}</span><b>${esc(c.title)}</b><span class="muted small">${esc(headline(c))}</span></span></button>`).join('')}</div></section>`;
 };
+/* ---------- the score strip above the board during a game ---------- */
+// short enough for a phone: team codes for matches ("BL 61–54 FRE · Q3 12:04")
+function tickLine(c){
+  if (c.kind !== 'match') return headline(c);
+  const m = c.matches.find(x => x.state === 'in') || c.matches[0];
+  return m.state === 'pre' ? `${m.a.abbr || m.a.name} v ${m.b.abbr || m.b.name} · ${fmtTime(m.date)}` : `${m.a.abbr || m.a.name} ${m.a.score}–${m.b.score} ${m.b.abbr || m.b.name} · ${m.status}`;
+}
+const T = {turn:0, shown:null};
+const onNow = () => framed ? [] : S.cards.filter(c => c.state === 'in' || c.state === 'weekend');
+function ticker(){
+  const el = $('spTicker');
+  if (!el) return;
+  const live = onNow();
+  if (!live.length){ el.hidden = true; T.shown = null; return; }
+  const c = live[T.turn % live.length], line = tickLine(c), key = c.id + c.title;
+  if (el.dataset.line !== key + line){
+    el.innerHTML = `<span class="sp-ico">${c.icon}</span>${badge(c.state)}<span class="sp-tk"><b>${esc(c.title)}</b> <span>${esc(line)}</span></span>${live.length > 1 ? `<span class="sp-n">${T.turn % live.length + 1}/${live.length}</span>` : ''}`;
+    // the same event with a new score flashes; a different event just slides in
+    el.classList.remove('flash', 'swap'); void el.offsetWidth; el.classList.add(T.shown === key ? 'flash' : 'swap');
+    el.dataset.line = key + line; T.shown = key;
+  }
+  el.dataset.card = S.cards.indexOf(c);
+  el.hidden = false;
+}
+// tapping the strip shows the whole scorecard without leaving the game
+document.addEventListener('click', e => {
+  const t = e.target.closest('#spTicker');
+  if (!t) return;
+  const c = S.cards[+t.dataset.card];
+  if (!c) return;
+  const m = GW.modal(`<div class="sp-head"><span class="sp-ico big">${c.icon}</span><div class="grow"><div class="sp-k">${badge(c.state)} ${esc(c.sport)}</div><h2 style="margin:2px 0 0">${esc(c.title)}</h2>${c.sub ? `<div class="muted small">${esc(c.sub)}</div>` : ''}</div></div>
+    <div class="sp-card" style="gap:8px">${detail(c)}</div><div class="muted small">${esc(updatedLine())}</div>
+    <div class="row"><button class="btn grow" type="button" id="spAll">All sport</button><button class="btn pop grow" type="button" id="spBack">Back to the game</button></div>`);
+  m.querySelector('#spBack').addEventListener('click', () => GW.closeModal());
+  m.querySelector('#spAll').addEventListener('click', () => { GW.closeModal(); GW.show('sports'); });
+});
 function paint(){
+  ticker();
   const scr = GW.currentScreen();
   if (scr === 'home'){ const el = document.querySelector('.sp-strip'), html = GW.sportsStrip(); if (el && html) el.outerHTML = html; else if (!el && html && GW.renderHome) GW.renderHome(); else if (el && !html) el.remove(); }
   if (scr !== 'sports') return;
@@ -244,8 +281,12 @@ function paint(){
 }
 $('scr-sports').innerHTML = '';
 // keep scores fresh only while they're on screen
-setInterval(() => { if (document.visibilityState === 'visible' && ['home', 'sports'].includes(GW.currentScreen())) refresh(); }, 15000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ['home', 'sports'].includes(GW.currentScreen())) refresh(); });
+const WATCH = ['home', 'sports', 'game'];
+setInterval(() => { if (document.visibilityState === 'visible' && WATCH.includes(GW.currentScreen())) refresh(); }, 15000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && WATCH.includes(GW.currentScreen())) refresh(); });
+// several live events take turns in the game's score strip
+setInterval(() => { if (GW.currentScreen() === 'game' && document.visibilityState === 'visible'){ T.turn++; ticker(); } }, 7000);
+document.addEventListener('gw-screen', e => { ticker(); if (WATCH.includes(e.detail)) refresh(); });
 GW.register('sports', {onShow: () => { paint(); refresh(); }});
 setTimeout(() => refresh(), 3000);
 GW.sports = {refresh, state: () => S, build};

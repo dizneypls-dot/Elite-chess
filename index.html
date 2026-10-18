@@ -126,8 +126,10 @@ button:focus-visible,.tile:focus-visible,input:focus-visible{outline:3px solid c
 /* ---------- Common layout ---------- */
 .play{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
 @media (min-width:901px){ body[data-screen] main:has(.play:not([hidden])){padding-top:14px;padding-bottom:14px} }
-.board-col{display:flex;flex-direction:column;gap:6px;min-width:0;width:min(100%,var(--board-max));margin-inline:auto}
-.board-col:has(.board-with-bar){width:min(100%,calc(var(--board-max) + 34px))}
+.board-col{display:flex;flex-direction:column;gap:6px;min-width:0;width:min(100%,calc(var(--board-max) - var(--tick,0px)));margin-inline:auto}
+.board-col:has(.board-with-bar){width:min(100%,calc(var(--board-max) - var(--tick,0px) + 34px))}
+/* the live sport strip takes some height, so the board gives it room (not on phones, where width decides) */
+.play:has(.sp-ticker:not([hidden])){--tick:44px}
 .panel{background:var(--surface);border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .play > .panel{position:sticky;top:20px;max-height:calc(100dvh - 40px);overflow-y:auto}
 .play > .panel .moves{flex:1 1 auto;min-height:120px;max-height:none}
@@ -145,6 +147,7 @@ button:focus-visible,.tile:focus-visible,input:focus-visible{outline:3px solid c
 @media (max-width:900px){
   /* Phone: edge-to-edge board, compact player bars, game buttons right under the board */
   :root{--board-max:100vw}
+  .play:has(.sp-ticker:not([hidden])){--tick:0px}
   .board-col{width:calc(100% + 28px);margin-inline:-14px;gap:4px}
   .board-col:has(.board-with-bar){width:calc(100% + 28px)}
   .board-col .frame{border-radius:0;box-shadow:none}
@@ -169,13 +172,17 @@ button:focus-visible,.tile:focus-visible,input:focus-visible{outline:3px solid c
   main{padding:8px 12px}
   /* Player bars sit beside the board, so the board takes the full height */
   :root{--board-max:calc(100dvh - 16px)}
-  .play{grid-template-columns:var(--board-max) minmax(0,1fr);grid-template-rows:auto auto 1fr;gap:6px 12px;align-items:stretch}
+  .play{grid-template-columns:var(--board-max) minmax(0,1fr);grid-template-rows:auto auto auto 1fr;gap:6px 12px;align-items:stretch}
+  .play:has(.sp-ticker:not([hidden])){--tick:0px}
   .play:has(.board-with-bar){grid-template-columns:calc(var(--board-max) + 14px) minmax(0,1fr)}
   .board-col,.board-col:has(.board-with-bar){display:contents}
-  .board-col > :nth-child(2){grid-column:1;grid-row:1 / span 3;width:100%}
-  .board-col > .player:first-child{grid-column:2;grid-row:1;padding:0}
-  .board-col > .player:last-child{grid-column:2;grid-row:2;padding:0}
-  .play > .panel{grid-column:2;grid-row:3;min-height:0;max-height:none;overflow-y:auto;position:static}
+  /* matched by type, not position: the live sport strip (a button) may sit first in the column */
+  .board-col > div:nth-of-type(2){grid-column:1;grid-row:1 / span 4;width:100%}
+  .board-col > .sp-ticker{grid-column:2;grid-row:1;margin:0;width:100%}
+  .sp-ticker .sp-tk b{display:none}
+  .board-col > .player:first-of-type{grid-column:2;grid-row:2;padding:0}
+  .board-col > .player:last-child{grid-column:2;grid-row:3;padding:0}
+  .play > .panel{grid-column:2;grid-row:4;min-height:0;max-height:none;overflow-y:auto;position:static}
   .board-col .frame{border-radius:6px}
   #toasts{bottom:12px;left:auto;right:12px;max-width:300px}
 }
@@ -875,6 +882,20 @@ body.landing-open{overflow:hidden}
 .sp-tp.w span{font-weight:800}
 .sp-later{display:flex;flex-direction:column;gap:10px}
 @media (max-width:520px){.sp-grid{grid-template-columns:1fr}.sp-m > b{font-size:17px}}
+/* live sport score strip above the board during a game */
+.sp-ticker{display:flex;align-items:center;gap:8px;width:100%;min-width:0;border:0;cursor:pointer;font:inherit;text-align:left;color:#fff;background:linear-gradient(90deg,#1c1a3a,#2b2860);border-radius:12px;padding:6px 10px;margin-bottom:6px;box-shadow:0 2px 8px -4px rgba(0,0,0,.4)}
+.sp-ticker[hidden]{display:none}
+.sp-ticker .sp-ico{font-size:18px}
+.sp-ticker .sp-tk{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.sp-ticker .sp-tk span{opacity:.9;font-family:var(--f-mono);font-weight:700}
+.sp-ticker .sp-n{font:700 11px var(--f-mono);opacity:.7}
+.sp-ticker .sp-live,.sp-ticker .sp-on{font:800 10px var(--f-head);letter-spacing:.05em}
+.sp-ticker.flash{animation:spFlash 1.2s ease-out}
+.sp-ticker.swap .sp-tk{animation:spSwap .45s ease-out}
+@keyframes spFlash{0%{box-shadow:0 0 0 3px #ffd23f}100%{box-shadow:0 2px 8px -4px rgba(0,0,0,.4)}}
+@keyframes spSwap{from{transform:translateY(60%);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:900px){.board-col > .sp-ticker{margin:0 12px 4px;width:auto;border-radius:10px}}
+@media (max-width:560px){.sp-ticker .sp-tk b{display:none}}
 .coach.hot{background:color-mix(in srgb,var(--gold) 18%,var(--surface));animation:pop .25s ease-out}
 
 /* ---------- Customize ---------- */

@@ -207,6 +207,7 @@ function configFromSetup(){
 $('scr-game').innerHTML = `
 <div class="play">
   <div class="board-col">
+    <button class="sp-ticker" id="spTicker" type="button" hidden aria-label="Live sport score"></button>
     <div class="player" id="topBar"></div>
     <div id="gameBoard"></div>
     <div class="player" id="botBar"></div>

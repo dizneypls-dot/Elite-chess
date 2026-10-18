@@ -1114,6 +1114,7 @@ function show(name, arg){
   document.body.dataset.screen = name;
   if (window.GW.renderRailMe) window.GW.renderRailMe();
   if (def.onShow) def.onShow(arg);
+  document.dispatchEvent(new CustomEvent('gw-screen', {detail: name}));
   window.scrollTo(0, 0);
 }
 const currentScreen = () => current;
