@@ -114,13 +114,9 @@ let regionNames = null;
 try { regionNames = new Intl.DisplayNames(undefined, {type:'region'}); } catch (_) {}
 const countryName = iso => { try { return (regionNames && regionNames.of(iso)) || iso; } catch (_) { return iso; } };
 const COUNTRIES = COUNTRY_CODES.map(code => ({code, name: countryName(code)})).sort((a, b) => a.name.localeCompare(b.name));
-const flagBadge = iso => `<g class="av-flag"><rect x="56" y="71" width="40" height="26" rx="7" fill="#fff" stroke="#000" stroke-opacity=".18"/><text x="76" y="90.5" font-size="20" text-anchor="middle">${flagOf(iso)}</text></g></svg>`;
-const avatarSVG = (who, mood = who.mood || '') => {
-  const iso = flagOf(who.country) ? who.country : '';
-  const k = mood + iso + JSON.stringify(who.look);
-  if (!avCache.has(k)){ const svg = D.avatar(who.look, mood); avCache.set(k, iso ? svg.replace(/<\/svg>\s*$/, flagBadge(iso)) : svg); }
-  return avCache.get(k);
-};
+// The player's flag goes right after their name
+const nameFlag = who => who && flagOf(who.country) ? ` <span class="nflag" title="${esc(countryName(who.country))}" role="img" aria-label="${esc(countryName(who.country))}">${flagOf(who.country)}</span>` : '';
+const avatarSVG = (who, mood = who.mood || '') => { const k = mood + JSON.stringify(who.look); if (!avCache.has(k)) avCache.set(k, D.avatar(who.look, mood)); return avCache.get(k); };
 
 /* ---------- Settings ---------- */
 const settings = store.get('gw-settings', {theme:'greenwood', pieces:'cburnett', colorway:'natural', sound:true, soundPack:'real', volume:0.8, fx:true, fxPack:'', autoPack:true, lastAutoPack:'', hemisphere:'auto',
@@ -1147,7 +1143,7 @@ function hardwareBack(){
 }
 
 function barHTML(who, color, extra = {}){
-  return `<div class="av">${avatarSVG(who, extra.mood || (extra.think ? 'think' : ''))}</div><div class="pinfo"><div class="pname">${esc(who.name)}${who.elo ? `<span class="elo">(${who.elo})</span>` : ''}</div>` +
+  return `<div class="av">${avatarSVG(who, extra.mood || (extra.think ? 'think' : ''))}</div><div class="pinfo"><div class="pname">${esc(who.name)}${nameFlag(who)}${who.elo ? `<span class="elo">(${who.elo})</span>` : ''}</div>` +
     `<div class="caps">${extra.caps || ''}${extra.adv || ''}</div></div>` +
     (extra.chat ? `<div class="pbubble${extra.chatNew ? ' new' : ''}" role="status">${extra.think ? '<span class="think">Thinking</span>' : esc(extra.chat)}</div>` : '<span class="spacer"></span>') +
     `${extra.think && !extra.chat ? '<span class="think">Thinking</span>' : ''}${extra.clock ? `<span class="clock" id="clock-${color}" aria-label="${NAME[color]} clock"></span>` : ''}`;
@@ -1165,7 +1161,7 @@ const cloudReady = (async () => {
 
 window.GW = {
   cloudReady,
-  C, D, LRN, $, now, sleep, NAME, PIECE_NAME, esc, store, clamp, rnd, avatarSVG, COUNTRIES, flagOf, countryName, settings, applySettings, boards,
+  C, D, LRN, $, now, sleep, NAME, PIECE_NAME, esc, store, clamp, rnd, avatarSVG, COUNTRIES, flagOf, countryName, nameFlag, settings, applySettings, boards,
   pieceSets, pieceImg, applyPack, autoPack, currentPack, ownLook, restoreOwnLook, flyNow, scheduleFly, SOUND_PACKS, PIECE_KEYS,
   profile, saveProfile, me, unlock, markDay, dayStreak, buzz, levelOf, xpForLevel, dailyGoals, addXP, track, rateGame, recordResult, toast, modal, closeModal, sfx, moveKind,
   openingName, BOOK_PREFIX, OPEN_BY_LINE, THEME_LABEL, BANK, pickPuzzle, bankSpec, classicSpec, CLS, clsIcon, clsSVG,

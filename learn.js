@@ -62,10 +62,10 @@ function renderHome(){
   $('scr-home').innerHTML = `
   <div class="home">
     <section class="hero">
-      <div class="hero-me"><div class="av big">${avatarSVG(GW.me())}</div><div><div class="muted">${greeting()},</div><h1>${esc(profile.name || 'Player')}</h1>
+      <div class="hero-me"><div class="av big">${avatarSVG(GW.me())}</div><div><div class="muted">${greeting()},</div><h1>${esc(profile.name || 'Player')}${GW.nameFlag(GW.me())}</h1>
         <div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating ${delta ? `<i class="${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲' : '▼'} ${Math.abs(delta)}</i>` : ''}</span><span class="pill">${profile.wins}W · ${profile.draws}D · ${profile.losses}L</span><span class="pill">🧩 ${profile.puzzleRating}</span><span class="pill lvl" title="${profile.xp || 0} XP">Level ${lvl}</span>${GW.dayStreak() ? `<span class="pill streak">🔥 ${GW.dayStreak()} day${GW.dayStreak() > 1 ? 's' : ''}</span>` : ''}</div></div></div>
       ${profile.history.length >= 2 ? `<div class="hero-chart">${ratingChart(360, 96)}</div>` : '<div class="hero-chart empty"><div class="hero-tip">Win rated games to climb. Your rating graph appears here.</div></div>'}
-      <div class="hero-cta">${active ? '<button class="btn pop big" id="hmContinue" type="button">Continue game</button>' : ''}<button class="btn ${active ? 'violet' : 'pop'} big" id="hmPlay" type="button">Play a bot</button></div>
+      <div class="hero-cta">${active ? '<button class="btn pop big" id="hmContinue" type="button">Continue game</button>' : ''}<button class="btn ${active ? 'violet' : 'pop'} big" id="hmPlay" type="button">Play</button></div>
     </section>
     ${homeExtras()}
     <section class="goals-card">
@@ -719,7 +719,7 @@ function renderProfile(){
   <div class="page-head"><div><h1>Profile</h1><div class="muted">Your player card, progress and trophy cabinet.</div></div></div>
   <div class="profile-grid">
     <section class="panel">
-      <div class="me-card"><div class="av huge" id="pfAv">${avatarSVG(GW.me())}</div><div class="grow"><input class="search name-in" id="pfName" maxlength="20" placeholder="Your name" value="${esc(profile.name)}"><select class="search country-in" id="pfCountry" aria-label="Your country"><option value="">🌐 Choose your country</option>${GW.COUNTRIES.map(c => `<option value="${c.code}"${c.code === profile.country ? ' selected' : ''}>${GW.flagOf(c.code)} ${esc(c.name)}</option>`).join('')}</select><div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating</span><span class="pill">Best ${profile.best || profile.rating}</span></div></div></div>
+      <div class="me-card"><div class="av huge" id="pfAv">${avatarSVG(GW.me())}</div><div class="grow"><div class="name-row"><input class="search name-in" id="pfName" maxlength="20" placeholder="Your name" value="${esc(profile.name)}"><span id="pfFlag">${GW.nameFlag(GW.me())}</span></div><select class="search country-in" id="pfCountry" aria-label="Your country"><option value="">🌐 Choose your country</option>${GW.COUNTRIES.map(c => `<option value="${c.code}"${c.code === profile.country ? ' selected' : ''}>${GW.flagOf(c.code)} ${esc(c.name)}</option>`).join('')}</select><div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating</span><span class="pill">Best ${profile.best || profile.rating}</span></div></div></div>
       <div class="label">Make your avatar</div>
       <div class="muted small">Skin</div>${sw('skin', P.skin, L.skin)}
       <div class="muted small">Hair style</div>${sw('style', P.style, L.style)}
@@ -749,7 +749,7 @@ $('scr-profile').addEventListener('change', e => {
   if (e.target.id !== 'pfCountry') return;
   profile.country = e.target.value;
   saveProfile();
-  $('pfAv').innerHTML = avatarSVG(GW.me());
+  $('pfFlag').innerHTML = GW.nameFlag(GW.me());
   if (GW.renderRailMe) GW.renderRailMe();
 });
 $('scr-profile').addEventListener('click', e => {
@@ -897,7 +897,7 @@ GW.register('history', {onShow: renderHistory});
 
 GW.renderRailMe = () => {
   const el = $('railMe');
-  if (el) el.innerHTML = `<div class="av">${avatarSVG(GW.me())}</div><div style="min-width:0"><b>${esc(profile.name || 'Player')}</b><span>${profile.rating} · Lv ${GW.levelOf(profile.xp)}${GW.dayStreak() ? ` · 🔥${GW.dayStreak()}` : ''}</span></div>`;
+  if (el) el.innerHTML = `<div class="av">${avatarSVG(GW.me())}</div><div style="min-width:0"><b>${esc(profile.name || 'Player')}${GW.nameFlag(GW.me())}</b><span>${profile.rating} · Lv ${GW.levelOf(profile.xp)}${GW.dayStreak() ? ` · 🔥${GW.dayStreak()}` : ''}</span></div>`;
 };
 $('railMe').addEventListener('click', () => GW.show('profile'));
 

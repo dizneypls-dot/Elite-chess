@@ -627,7 +627,12 @@ button.mv:hover{background:var(--surface)}
   .cup-grid{grid-template-columns:1fr}
   .stat-row.four{grid-template-columns:repeat(2,1fr)}
 }
-@media (max-width:700px){ #scr-setup .board-col{display:none} }
+/* The Play menu is the same dashboard on every screen size: no preview board, options centred */
+#scr-setup .board-col{display:none}
+#scr-setup .play{grid-template-columns:minmax(0,720px);justify-content:center}
+#scr-setup .play > .panel{position:static;max-height:none;overflow:visible}
+.nflag{font-size:.95em;margin-left:6px;font-weight:400;vertical-align:baseline}
+.name-row{display:flex;align-items:center;gap:8px}.name-row .name-in{flex:1;min-width:0}.name-row .nflag{font-size:28px;margin:0}
 @media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important} }
 
 /* ---------- Seasonal effects on the board ---------- */
