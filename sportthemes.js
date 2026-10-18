@@ -157,6 +157,15 @@ const SPORTS = [
    pal:pal({body:'#ffffff', shade:'#e2e2e2', ink:'#1a1a1a', a1:'#d20a0a', a2:'#c9a227', ball:'#d20a0a', ball2:'#ffffff'}, {body:'#1a1a1a', shade:'#0a0a0a', ink:'#000', a1:'#ff3b3b', a2:'#c9a227', ball:'#1a1a1a', ball2:'#c9a227', hi:'#3a3a3a'}),
    cw:{w:{body:'#ffffff', ink:'#d20a0a'}, b:{body:'#1a1a1a', ink:'#ff5a5a'}}}
 ];
+// the finer craft over the shared pieces: a crowd in the stand, engraving on the cup, a carved mane
+const CROWD = ['#e5484d', '#3b82f6', '#ffd23f', '#22c55e', '#ffffff', '#f97316', '#a855f7'];
+const DETAIL = {
+  R: c => [52.6, 60.6, 68.6].map((y, r) => [...Array(9)].map((_, i) => `<circle cx="${33 + i * 4.3 + (r % 2) * 2}" cy="${y}" r="1.5" fill="${CROWD[(i * 3 + r * 2) % CROWD.length]}"/>`).join('')).join('') +
+    L('M28 34h44', '#fff', 1, ' opacity=".5"') + L('M30 40h40', c.ink, .8, ' opacity=".25"') + L('M29 48v34', '#fff', 1.2, ' opacity=".35"'),
+  Q: c => L('M36 30q14 4 28 0', '#fff', .9, ' opacity=".55"') + L('M38 50q12 6 24 0', c.ink, .9, ' opacity=".3"') + L('M43 79h14', c.a2, 1.4) + L('M47.6 60v13', '#fff', 1, ' opacity=".5"'),
+  N: c => L('M60 44c3 4 5 9 6 14M64 50c2 4 3 8 3 12M67 58c1 4 1 8 1 12', c.ink, 1, ' opacity=".3"') + L('M28 49q4 3 9 2', c.ink, .9, ' opacity=".35"') +
+    `<path d="M22 48q2-1.6 4 0" fill="none" stroke="#fff" stroke-width=".9" opacity=".6"/>` + L('M44 62q2 10-2 22', c.ink, .9, ' opacity=".25"')
+};
 const MOTION = {P:['spin', [50, 62, 8]], B:['sway', [50, 84, 3, 3.4]], N:['bob', [1.4, 2.4]], Q:['pulse', [50, 50, 1.04, 2.4]], K:['sway', [50, 86, 1.6, 4]]};
 const SPARK = {Q:[[[34, 18, 3, 1.8], [66, 20, 3, 2.2]], '#fff6c8'], K:[[[36, 14, 3, 1.6], [64, 16, 3, 2]], '#fff6c8']};
 const NO_SPIN = ['tyre', 'helmet', 'puck', 'glove', 'golf'];
@@ -168,7 +177,7 @@ for (const s of SPORTS){
     N: c => knight(c, s.gear),
     Q: c => cup(c, `<g transform="translate(50 42) scale(.3)">${BALL[s.pawn](c)}</g>`),
     K: c => KING[s.king](c)
-  }};
+  }, detail: DETAIL};
   const mo = Object.assign({}, MOTION);
   if (NO_SPIN.includes(s.pawn)) mo.P = ['bob', [2, 1.6]];
   register('sp-' + s.id, set, mo, SPARK);

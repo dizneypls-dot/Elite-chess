@@ -119,7 +119,7 @@ const nameFlag = who => who && flagOf(who.country) ? ` <span class="nflag" title
 const avatarSVG = (who, mood = who.mood || '') => { const k = mood + JSON.stringify(who.look); if (!avCache.has(k)) avCache.set(k, D.avatar(who.look, mood)); return avCache.get(k); };
 
 /* ---------- Settings ---------- */
-const settings = store.get('gw-settings', {theme:'greenwood', pieces:'cburnett', colorway:'natural', sound:true, soundPack:'real', volume:0.8, fx:true, fxPack:'', autoPack:true, lastAutoPack:'', hemisphere:'auto',
+const settings = store.get('gw-settings', {theme:'greenwood', pieces:'staunton', colorway:'natural', sound:true, soundPack:'real', volume:0.8, fx:true, fxPack:'', autoPack:true, lastAutoPack:'', hemisphere:'auto',
   finish:true, hints:true, coords:true, premove:true, appearance:'auto', haptics:true, autoQueen:false, confirmResign:true, moveConfirm:false, boardAnim:true});
 if (!D.THEMES.some(t => t.id === settings.theme)) settings.theme = 'greenwood';
 // 1.0–1.3 saved a dark default; go back to the original look (follow the device) once
@@ -139,7 +139,7 @@ function applyPack(p){
   settings.pieces = settings.charPieces !== false && pieceSets()[p.pieces] ? p.pieces : (p.alt || 'cburnett');
   scheduleFly(true);
 }
-const ownLook = () => Object.assign({theme:'greenwood', pieces:'cburnett', colorway:'natural'}, settings.ownLook || {});
+const ownLook = () => Object.assign({theme:'greenwood', pieces:'staunton', colorway:'natural'}, settings.ownLook || {});
 function restoreOwnLook(){
   const o = ownLook();
   settings.theme = o.theme; settings.pieces = o.pieces; settings.colorway = o.colorway; settings.fxPack = '';
