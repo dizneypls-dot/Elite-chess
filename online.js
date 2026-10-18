@@ -12,7 +12,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 /* ---------- Who I am, and cleaning up who the other side says they are ---------- */
-const me = () => ({name: String(GW.profile.name || 'Player').slice(0, 20), look: GW.profile.look, elo: GW.profile.rating});
+const me = () => ({name: String(GW.profile.name || 'Player').slice(0, 20), look: GW.profile.look, elo: GW.profile.rating, country: GW.profile.country || ''});
 // Avatars are drawn into SVG, so only plain colours, words, numbers and flags get through
 function cleanLook(look){
   if (!look || typeof look !== 'object') return null;
@@ -27,7 +27,8 @@ function cleanLook(look){
 const cleanWho = who => ({
   name: String((who && who.name) || 'Opponent').replace(/[\u0000-\u001f]/g, '').slice(0, 20) || 'Opponent',
   look: cleanLook(who && who.look) || GW.D.PEOPLE.black.look,
-  elo: Math.round(+((who && who.elo) || 0)) || null
+  elo: Math.round(+((who && who.elo) || 0)) || null,
+  country: who && /^[A-Z]{2}$/.test(who.country) ? who.country : ''
 });
 const validTc = tc => typeof tc === 'string' && GW.D.TIME_CONTROLS.some(t => t.id === tc && t.id !== '0');
 

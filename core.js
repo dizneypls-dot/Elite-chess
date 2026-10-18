@@ -101,7 +101,24 @@ const KIDS_CSS =
 // One piece as an image, for previews (set and colourway can differ from the current ones)
 const pieceImg = (k, setId, cwId) => { const sets = pieceSets(), set = sets[setId] || sets.cburnett; return `url("data:image/svg+xml,${encodeURIComponent(finish(set.svg[k], k[0], set.themed ? null : (D.COLORWAYS || []).find(x => x.id === cwId)))}")`; };
 const avCache = new Map();
-const avatarSVG = (who, mood = who.mood || '') => { const k = mood + JSON.stringify(who.look); if (!avCache.has(k)) avCache.set(k, D.avatar(who.look, mood)); return avCache.get(k); };
+// Countries (ISO 3166 codes) for the player's flag, shown as a badge on their avatar
+const COUNTRY_CODES = ('AF AX AL DZ AS AD AO AI AG AR AM AW AU AT AZ BS BH BD BB BY BE BZ BJ BM BT BO BA BW BR BN BG BF BI CV KH CM CA KY CF TD CL CN CO KM CG CD ' +
+  'CK CR CI HR CU CW CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FK FO FJ FI FR GF PF GA GM GE DE GH GI GR GL GD GP GU GT GG GN GW GY HT HN HK HU IS IN ID IR IQ IE ' +
+  'IM IL IT JM JP JE JO KZ KE KI XK KW KG LA LV LB LS LR LY LI LT LU MO MG MW MY MV ML MT MH MQ MR MU YT MX FM MD MC MN ME MS MA MZ MM NA NR NP NL NC NZ NI NE NG ' +
+  'NU KP MK NO OM PK PW PS PA PG PY PE PH PL PT PR QA RE RO RU RW BL SH KN LC MF PM VC WS SM ST SA SN RS SC SL SG SX SK SI SB SO ZA KR SS ES LK SD SR SE CH SY TW ' +
+  'TJ TZ TH TL TG TO TT TN TR TM TC TV UG UA AE GB US UY UZ VU VA VE VN VG VI WF EH YE ZM ZW').split(' ');
+const flagOf = iso => /^[A-Z]{2}$/.test(iso || '') ? String.fromCodePoint(...[...iso].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '';
+let regionNames = null;
+try { regionNames = new Intl.DisplayNames(undefined, {type:'region'}); } catch (_) {}
+const countryName = iso => { try { return (regionNames && regionNames.of(iso)) || iso; } catch (_) { return iso; } };
+const COUNTRIES = COUNTRY_CODES.map(code => ({code, name: countryName(code)})).sort((a, b) => a.name.localeCompare(b.name));
+const flagBadge = iso => `<g class="av-flag"><rect x="56" y="71" width="40" height="26" rx="7" fill="#fff" stroke="#000" stroke-opacity=".18"/><text x="76" y="90.5" font-size="20" text-anchor="middle">${flagOf(iso)}</text></g></svg>`;
+const avatarSVG = (who, mood = who.mood || '') => {
+  const iso = flagOf(who.country) ? who.country : '';
+  const k = mood + iso + JSON.stringify(who.look);
+  if (!avCache.has(k)){ const svg = D.avatar(who.look, mood); avCache.set(k, iso ? svg.replace(/<\/svg>\s*$/, flagBadge(iso)) : svg); }
+  return avCache.get(k);
+};
 
 /* ---------- Settings ---------- */
 const settings = store.get('gw-settings', {theme:'greenwood', pieces:'cburnett', colorway:'natural', sound:true, soundPack:'real', volume:0.8, fx:true, fxPack:'', autoPack:true, lastAutoPack:'', hemisphere:'auto',
@@ -218,7 +235,7 @@ const profile = store.get('gw-profile', {
   reviews:0, onboarded:false, best:0
 });
 const saveProfile = () => store.set('gw-profile', profile);
-const me = () => ({name: profile.name || 'You', look: profile.look, elo: profile.rating});
+const me = () => ({name: profile.name || 'You', look: profile.look, elo: profile.rating, country: profile.country || ''});
 function unlock(id){
   if (profile.achievements.includes(id)) return;
   const a = D.ACHIEVEMENTS.find(x => x.id === id);
@@ -1146,7 +1163,7 @@ const cloudReady = (async () => {
 
 window.GW = {
   cloudReady,
-  C, D, LRN, $, now, sleep, NAME, PIECE_NAME, esc, store, clamp, rnd, avatarSVG, settings, applySettings, boards,
+  C, D, LRN, $, now, sleep, NAME, PIECE_NAME, esc, store, clamp, rnd, avatarSVG, COUNTRIES, flagOf, countryName, settings, applySettings, boards,
   pieceSets, pieceImg, applyPack, autoPack, currentPack, ownLook, restoreOwnLook, flyNow, scheduleFly, SOUND_PACKS, PIECE_KEYS,
   profile, saveProfile, me, unlock, markDay, dayStreak, buzz, levelOf, xpForLevel, dailyGoals, addXP, track, rateGame, recordResult, toast, modal, closeModal, sfx, moveKind,
   openingName, BOOK_PREFIX, OPEN_BY_LINE, THEME_LABEL, BANK, pickPuzzle, bankSpec, classicSpec, CLS, clsIcon, clsSVG,

@@ -79,6 +79,7 @@ function renderHome(){
       <button class="tile-card" data-go="rush" type="button"><div class="tile-ico" style="--c:#ef476f">⚡</div><div><div class="kicker">Puzzle Rush</div><h3>Best: ${profile.rushBest}</h3><p>Three minutes, three strikes.</p></div></button>
       <button class="tile-card" data-go="cups" type="button"><div class="tile-ico" style="--c:#ffb627">${GW.trophySVG('#ffb627')}</div><div><div class="kicker">Cups</div><h3>${cupsWon} / ${D.CUPS.length} won</h3><p>Knockout tournaments vs the bots.</p></div></button>
       <button class="tile-card" data-go="learn" type="button"><div class="tile-ico" style="--c:#22c55e">📘</div><div><div class="kicker">${nextLesson ? 'Next lesson' : 'Learn'}</div><h3>${nextLesson ? esc(nextLesson.l.title) : 'All done!'}</h3><p>${nextLesson ? esc(nextLesson.c.title) : 'Every lesson completed.'}</p></div></button>
+      <button class="tile-card" data-go="coach" type="button"><div class="tile-ico" style="--c:#6c5ce7">🎓</div><div><div class="kicker">Coach</div><h3>Play with a coach</h3><p>Best lines, threats, plans and blunder alerts.</p></div></button>
       <button class="tile-card" data-go="kids" type="button"><div class="tile-ico" style="--c:#ff7eb3">⭐</div><div><div class="kicker">Kids Academy</div><h3>Learn with stars</h3><p>Games for young players.</p></div></button>
       <button class="tile-card" data-go="openings" type="button"><div class="tile-ico" style="--c:#a855f7">📖</div><div><div class="kicker">Openings</div><h3>${(window.GW_OPENINGS || []).length.toLocaleString()} lines</h3><p>Explore and practise.</p></div></button>
       <button class="tile-card" data-go="analysis" type="button"><div class="tile-ico" style="--c:#3b82f6">🔍</div><div><div class="kicker">Analysis board</div><h3>Best computer moves</h3><p>Stockfish lines for any position.</p></div></button>
@@ -101,6 +102,7 @@ $('scr-home').addEventListener('click', e => {
   if (go === 'rush') return GW.show('puzzles', {mode:'rush'});
   if (go === 'puzzles') return GW.show('puzzles', {mode:'daily'});
   if (go === 'kids') return GW.show('learn', {course:'kids'});
+  if (go === 'coach') return GW.show('setup', {coach:true});
   if (go === 'pack'){ GW.applyPack(D.PACKS.find(p => p.id === b.dataset.pk)); GW.applySettings(); sfx.success(); return renderHome(); }
   GW.show(go);
 });
@@ -717,7 +719,7 @@ function renderProfile(){
   <div class="page-head"><div><h1>Profile</h1><div class="muted">Your player card, progress and trophy cabinet.</div></div></div>
   <div class="profile-grid">
     <section class="panel">
-      <div class="me-card"><div class="av huge" id="pfAv">${avatarSVG(GW.me())}</div><div class="grow"><input class="search name-in" id="pfName" maxlength="20" placeholder="Your name" value="${esc(profile.name)}"><div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating</span><span class="pill">Best ${profile.best || profile.rating}</span></div></div></div>
+      <div class="me-card"><div class="av huge" id="pfAv">${avatarSVG(GW.me())}</div><div class="grow"><input class="search name-in" id="pfName" maxlength="20" placeholder="Your name" value="${esc(profile.name)}"><select class="search country-in" id="pfCountry" aria-label="Your country"><option value="">🌐 Choose your country</option>${GW.COUNTRIES.map(c => `<option value="${c.code}"${c.code === profile.country ? ' selected' : ''}>${GW.flagOf(c.code)} ${esc(c.name)}</option>`).join('')}</select><div class="hero-stats"><span class="rating-chip big"><b>${profile.rating}</b> rating</span><span class="pill">Best ${profile.best || profile.rating}</span></div></div></div>
       <div class="label">Make your avatar</div>
       <div class="muted small">Skin</div>${sw('skin', P.skin, L.skin)}
       <div class="muted small">Hair style</div>${sw('style', P.style, L.style)}
@@ -743,6 +745,13 @@ function renderProfile(){
   </div>`;
 }
 $('scr-profile').addEventListener('input', e => { if (e.target.id === 'pfName'){ profile.name = e.target.value.trim().slice(0, 20); saveProfile(); } });
+$('scr-profile').addEventListener('change', e => {
+  if (e.target.id !== 'pfCountry') return;
+  profile.country = e.target.value;
+  saveProfile();
+  $('pfAv').innerHTML = avatarSVG(GW.me());
+  if (GW.renderRailMe) GW.renderRailMe();
+});
 $('scr-profile').addEventListener('click', e => {
   const b = e.target.closest('.parts button');
   if (!b) return;
@@ -821,8 +830,11 @@ function onboarding(){
   let lvl = 1;
   const looks = [D.PEOPLE.you.look, D.BOTS[2].look, D.BOTS[6].look, D.BOTS[10].look, D.BOTS[4].look, D.BOTS[13].look];
   let look = 0;
+  // the phone's region (en-AU → AU) is a good first guess for the flag
+  const guess = profile.country || (/-([A-Z]{2})$/.exec(navigator.language || '') || [])[1] || '';
   const m = GW.modal(`<div class="onboard"><div class="ob-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lgOb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6c5ce7"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22b8b0"/></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#lgOb)"/><path d="M20 6l3 4h-6zM15 11h10l-2 3h-6zM17 15h6l1.5 10h-9zM12 27h16v3H12zM10 31h20v3H10z" fill="#fff"/><circle cx="30" cy="10" r="3" fill="#ffb627"/></svg></div><h2>Welcome to Elite Chess</h2><div class="sub">Play bots, win cups, solve puzzles and learn from first moves to grandmaster technique.</div>
     <input class="search" id="obName" maxlength="20" placeholder="What should we call you?" value="${esc(profile.name || '')}">
+    <select class="search" id="obCountry" aria-label="Your country"><option value="">🌐 Your country (optional)</option>${GW.COUNTRIES.map(c => `<option value="${c.code}"${c.code === guess ? ' selected' : ''}>${GW.flagOf(c.code)} ${esc(c.name)}</option>`).join('')}</select>
     <div class="label">Pick an avatar (you can customise it later)</div><div class="ob-looks">${looks.map((l, i) => `<button type="button" data-look="${i}" aria-pressed="${i === 0}"><div class="av">${D.avatar(l)}</div></button>`).join('')}</div>
     <div class="label">How well do you play?</div><div class="ob-levels">${levels.map(([n, r], i) => `<button type="button" data-lvl="${i}" aria-pressed="${i === lvl}"><b>${n}</b><span>${r}</span></button>`).join('')}</div>
     <button class="btn pop big" id="obGo" type="button">Let’s play</button></div>`, {wide:true, onClose: () => { if (!profile.onboarded){ profile.onboarded = true; saveProfile(); } }});
@@ -833,6 +845,7 @@ function onboarding(){
   });
   m.querySelector('#obGo').addEventListener('click', () => {
     profile.name = m.querySelector('#obName').value.trim().slice(0, 20);
+    profile.country = m.querySelector('#obCountry').value;
     profile.look = Object.assign({}, looks[look]);
     profile.rating = profile.puzzleRating = levels[lvl][1];
     profile.best = profile.rating;

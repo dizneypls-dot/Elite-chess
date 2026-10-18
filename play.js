@@ -61,6 +61,7 @@ $('scr-setup').innerHTML = `
       </div>
     </div>
     <div><div class="label" style="margin-bottom:6px">Time control</div><div class="tc-grid" id="tcGrid"></div></div>
+    <div class="switch" id="coachRow"><span>Play with Coach<small class="muted">Live tips, best lines and a warning before blunders (casual game)</small></span><button type="button" id="coachBtn" aria-label="Play with Coach"></button></div>
     <div class="switch" id="ratedRow">Rated game<button type="button" id="ratedBtn" aria-label="Rated game"></button></div>
     <div class="play-cta"><button class="btn pop big" id="playBtn" type="button">Play</button></div>
   </aside>
@@ -83,7 +84,9 @@ function renderSetup(){
   $('playBtn').closest('.play-cta').hidden = setup.mode === 'online';
   if (setup.mode === 'online'){ if (setup.tc === '0') setup.tc = '300+0'; renderOnline(); }
   $('sideField').hidden = setup.mode !== 'cpu';
-  $('ratedRow').hidden = setup.mode !== 'cpu';
+  $('ratedRow').hidden = setup.mode !== 'cpu' || !!setup.coach;
+  $('coachRow').hidden = setup.mode !== 'cpu';
+  $('coachBtn').setAttribute('aria-pressed', String(!!setup.coach));
   $('ratedBtn').setAttribute('aria-pressed', String(setup.rated));
   const bot = D.BOTS[setup.bot];
   $('botHero').innerHTML = `<div class="av">${avatarSVG(bot)}</div><div class="grow"><h3>${bot.name}<span class="elo">${bot.elo}</span></h3><div class="muted" style="font-size:13px">${esc(bot.blurb)} <span class="tag">${esc(bot.style)}</span></div><div class="bubble">${esc(bot.greet)}</div></div>`;
@@ -116,6 +119,7 @@ $('cvcB').addEventListener('click', e => { const b = e.target.closest('.tile'); 
 $('sides').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ setup.side = b.dataset.v; renderSetup(); } });
 $('tcGrid').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ setup.tc = b.dataset.v; renderSetup(); } });
 $('ratedBtn').addEventListener('click', () => { setup.rated = !setup.rated; renderSetup(); });
+$('coachBtn').addEventListener('click', () => { setup.coach = !setup.coach; renderSetup(); });
 // Starting a new game while one is unfinished: continue it, or resign it (a rated game counts as a loss) and start
 $('playBtn').addEventListener('click', () => {
   const g = G;
@@ -187,13 +191,14 @@ $('olBox').addEventListener('click', e => {
 $('olBox').addEventListener('submit', e => { e.preventDefault(); GW.Online.joinCode($('olCode').value); });
 $('olBox').addEventListener('input', e => { if (e.target.id === 'olCode') e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 
-GW.register('setup', {onHide: () => { const st = GW.Online && GW.Online.state(); if (st && ['searching', 'hosting', 'joining'].includes(st.state)) GW.Online.cancel(); }, onShow: arg => { if (arg && arg.bot != null){ setup.mode = 'cpu'; setup.bot = arg.bot; setup.tier = D.BOTS[arg.bot].tier; } renderSetup(); }});
+GW.register('setup', {onHide: () => { const st = GW.Online && GW.Online.state(); if (st && ['searching', 'hosting', 'joining'].includes(st.state)) GW.Online.cancel(); }, onShow: arg => { if (arg && arg.bot != null){ setup.mode = 'cpu'; setup.bot = arg.bot; setup.tier = D.BOTS[arg.bot].tier; } if (arg && arg.coach){ setup.mode = 'cpu'; setup.coach = true; } renderSetup(); }});
 
 function configFromSetup(){
   const human = setup.mode === 'cpu' ? (setup.side === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : setup.side) : null;
   const bots = setup.mode === 'cpu' ? {[opp(human)]: setup.bot, [human]: null}
              : setup.mode === 'cvc' ? {w: setup.cvcW, b: setup.cvcB} : {w:null, b:null};
-  return {mode: setup.mode, human, bots, tc: setup.tc, rated: setup.mode === 'cpu' && setup.rated};
+  const coach = setup.mode === 'cpu' && !!setup.coach;
+  return {mode: setup.mode, human, bots, tc: setup.tc, rated: setup.mode === 'cpu' && setup.rated && !coach, coach};
 }
 
 /* ============================== GAME ============================== */
@@ -208,6 +213,7 @@ $('scr-game').innerHTML = `
     <div class="game-head" id="gameHead"></div>
     <div><div class="status" id="status"></div><div class="status-sub" id="statusSub"></div><div class="opening-name" id="gameOpening"></div></div>
     <button class="btn violet" id="liveBtn" type="button" hidden>${ICON.live}Back to the game</button>
+    <section class="coach-panel" id="coachPanel" hidden aria-label="Coach"></section>
     <ol class="moves" id="moves"></ol>
     <button class="btn pop" id="reviewNowBtn" type="button" hidden>Game Review</button>
     <div class="controls">
@@ -222,7 +228,7 @@ $('scr-game').innerHTML = `
   </aside>
 </div>`;
 
-let G = null;
+let G = null, gameSeq = 0;
 const ui = {thinking:false, paused:false, away:false, flipped:false, view:null, lastChat:null};
 let thinkToken = 0, turnStart = now();
 const cur = () => G.states[G.states.length - 1];
@@ -272,20 +278,23 @@ function startGame(cfg){
   thinkToken++;
   GW.closeModal();
   const s = C.initState(), tc = parseTc(cfg.tc);
-  G = Object.assign({}, cfg, {states:[s], hist:[], keys:[posKey(s)], tcObj:tc,
+  G = Object.assign({}, cfg, {id: ++gameSeq, states:[s], hist:[], keys:[posKey(s)], tcObj:tc,
         times:[{w: tc ? tc.base : 0, b: tc ? tc.base : 0}], flag:null, resigned:null, warned:{}, over:false, endShown:false,
         assisted:false, tookBack:false});
   turnStart = now();
   Engine.newGame();
   Object.assign(ui, {thinking:false, paused:false, away:false, flipped: cfg.human === 'b', view:null});
   gameBoard.premove = null;
-  if (Object.values(cfg.bots).some(k => k != null && D.BOTS[k].sf)) Engine.boot();
+  if (cfg.coach || Object.values(cfg.bots).some(k => k != null && D.BOTS[k].sf)) Engine.boot();
+  resetCoach();
+  if (cfg.coach) CO.tab = 'ideas';
   G.chat = cfg.mode === 'cpu' ? D.BOTS[cfg.bots[opp(cfg.human)]].greet : '';
   GW.show('game');
   syncBoard(null);
   renderGame();
   sfx.start();
   maybeCpu();
+  coachTick();
 }
 GW.startGame = startGame;
 
@@ -390,6 +399,8 @@ const pick = a => a[GW.rnd(a.length)];
 function doMove(m, dragged){
   if (!G || G.over) return;
   ui.view = null;
+  if (CO.preview){ clearInterval(CO.timer); CO.preview = null; }
+  CO.sel = -1; CO.threat = null;
   const s = cur();
   const t = Object.assign({}, G.times[G.times.length - 1]);
   if (G.tcObj && G.hist.length){
@@ -418,6 +429,7 @@ function doMove(m, dragged){
   }
   sfx.forMove(moveKind(m, n), self);
   maybeCpu();
+  coachTick();
 }
 
 function undo(){
@@ -432,9 +444,11 @@ function undo(){
   G.flag = null; G.resigned = null; G.over = false; G.endShown = false;
   turnStart = now();
   GW.closeModal();
+  resetCoach();
   syncBoard(null);
   renderGame();
   maybeCpu();
+  coachTick();
 }
 
 function togglePause(){
@@ -463,11 +477,343 @@ async function hint(){
   renderGame();
 }
 
+/* ---------- Coach: live advice while you play a bot ----------
+   Before your move: the engine's best moves with their full lines, every opening-book continuation, the opponent's
+   threat and a plan for the position. After your move: a verdict with the reason, and (if you want) a stop before
+   a mistake or blunder so you can take it back. Any line can be played through on the board. */
+const CO = {ideas:null, job:null, verdict:null, judged:0, hold:false, tab:'ideas', sel:-1, preview:null, threat:null, timer:null};
+const coachOpts = () => ({auto: setup.coachAuto !== false, guard: setup.coachGuard !== false});
+const posAt = n => 'position startpos' + (n ? ' moves ' + G.hist.slice(0, n).map(h => uci(h.m)).join(' ') : '');
+const humanTurn = () => G && G.coach && !G.over && cur().turn === G.human;
+function resetCoach(){
+  clearInterval(CO.timer);
+  Object.assign(CO, {ideas:null, job:null, verdict:null, judged:G ? G.hist.length : 0, hold:false, sel:-1, preview:null, threat:null, timer:null});
+}
+// "14. Nf3 Nc6 15. Bb5 …" for a line of UCI moves from a position
+function lineSan(s, pv, max = 10){
+  const out = [];
+  let st = s;
+  for (const u of (pv || []).slice(0, max)){
+    const m = fromUci(st, u);
+    if (!m) break;
+    out.push((st.turn === 'w' ? st.full + '. ' : out.length ? '' : st.full + '… ') + san(st, m));
+    st = apply(st, m);
+  }
+  return out.join(' ');
+}
+function lineMoves(s, pv, max = 12){
+  const states = [s], moves = [];
+  let st = s;
+  for (const u of (pv || []).slice(0, max)){ const m = fromUci(st, u); if (!m) break; moves.push(m); st = apply(st, m); states.push(st); }
+  return {states, moves};
+}
+// What a candidate move is for, in a few words
+function ideaWhy(s, m, cp){
+  if (cp >= 9000) return `mates in ${Math.round((10000 - cp) / 10)}`;
+  const mt = motif(s, m);
+  if (mt) return mt;
+  const p = m.piece[1], c = s.turn, back = c === 'w' ? 7 : 0, row = m.to >> 3;
+  if (m.flag === 'K' || m.flag === 'Q') return 'castles: the king gets safe and a rook joins the game';
+  if ('NB'.includes(p) && (m.from >> 3) === back) return `develops the ${PIECE_NAME[p]}`;
+  if (p === 'P' && [27, 28, 35, 36].includes(m.to)) return 'claims the centre';
+  if (p === 'P' && (c === 'w' ? row <= 2 : row >= 5)) return 'pushes the pawn towards promotion';
+  if (p === 'R' && !s.board.some((q, i) => q && q[1] === 'P' && (i & 7) === (m.to & 7))) return 'puts the rook on an open file';
+  if (p === 'K' && s.board.filter(q => q && 'QRBN'.includes(q[1])).length <= 6) return 'activates the king for the endgame';
+  if (m.cap) return `takes the ${PIECE_NAME[m.cap[1]]}`;
+  return 'improves the position';
+}
+// The engine's best moves for you, with lines (scores from your side)
+function coachIdeas(){
+  if (!humanTurn()) return null;
+  const ply = G.hist.length;
+  if (CO.ideas && CO.ideas.ply === ply) return CO.job;
+  const s = cur(), id = G.id;
+  CO.ideas = {ply, lines:null};
+  CO.job = (async () => {
+    let lines = [];
+    if (await Engine.boot()){
+      const r = await Engine.search(posAt(ply), {ms: Engine.fast ? 1100 : 1600, multipv:4});
+      lines = r ? r.lines : [];
+    } else { const q = C.quickAnalyse(s); lines = q.best ? [{score:q.score, pv:[q.best]}] : []; }
+    if (!G || G.id !== id || !CO.ideas || CO.ideas.ply !== ply) return null;
+    CO.ideas.lines = lines.map(l => {
+      const m = fromUci(s, l.pv[0]), cp = povCp(l.score);
+      return m ? {u:l.pv[0], m, cp, san:san(s, m), why:ideaWhy(s, m, cp), pv:l.pv, text:lineSan(s, l.pv)} : null;
+    }).filter(Boolean);
+    renderCoach();
+    return CO.ideas;
+  })();
+  renderCoach();
+  return CO.job;
+}
+// Judge the move you just made (runs before the bot replies)
+async function coachJudge(){
+  const p = G.hist.length, k = p - 1, s = G.states[k], after = G.states[p], h = G.hist[k], id = G.id;
+  CO.judged = p;
+  const played = uci(h.m);
+  if (C.isMate(after)){ CO.verdict = {ply:p, kind:'best', title:`${h.san} · Checkmate!`, text:'Checkmate. Beautifully finished.'}; return; }
+  if (k < 24 && GW.BOOK_PREFIX.has(G.hist.slice(0, p).map(x => uci(x.m)).join(' '))){
+    const op = GW.openingName(G.hist.slice(0, p).map(x => uci(x.m)));
+    CO.verdict = {ply:p, kind:'book', title:`${h.san} · Book move`, text:`${h.san} is opening theory${op ? `: the ${op.name}` : ''}.`};
+    return;
+  }
+  if (!(await Engine.boot())){ CO.verdict = null; return; }
+  if (CO.ideas && CO.ideas.ply === k && !CO.ideas.lines){ Engine.stop(); await CO.job; }
+  let ideas = CO.ideas && CO.ideas.ply === k && CO.ideas.lines && CO.ideas.lines.length ? CO.ideas.lines : null;
+  if (!ideas){
+    const r0 = await Engine.search(posAt(k), {ms:600, multipv:2});
+    ideas = r0 ? r0.lines.map(l => { const m = fromUci(s, l.pv[0]), cp = povCp(l.score); return m ? {u:l.pv[0], m, cp, san:san(s, m), why:ideaWhy(s, m, cp), pv:l.pv} : null; }).filter(Boolean) : [];
+  }
+  const r = legal(after).length ? await Engine.search(posAt(p), {ms:700, multipv:1}) : null;
+  if (!G || G.id !== id || G.hist.length !== p || !ideas.length) return;
+  const best = ideas[0], mine = ideas.find(l => l.u === played);
+  const sp = mine ? mine.cp : r && r.lines[0] ? -povCp(r.lines[0].score) : best.cp;
+  const before = winPct(best.cp), loss = Math.max(0, before - winPct(sp));
+  let kind;
+  if (played === best.u){ kind = 'best'; if (ideas[1] && before - winPct(ideas[1].cp) >= 12 && before < 97) kind = 'great'; }
+  else if (loss < 2) kind = 'excellent';
+  else if (loss < 5) kind = 'good';
+  else if (loss < 10) kind = 'inaccuracy';
+  else if (loss < 20) kind = 'mistake';
+  else kind = 'blunder';
+  const them = opp(G.human), reply = r && r.best ? fromUci(after, r.best) : null;
+  const label = GW.CLS[kind].label;
+  let text;
+  if (kind === 'best' || kind === 'great') text = `${kind === 'great' ? 'Great find! The only move that keeps the advantage' : 'The best move'}${motif(s, h.m) ? `: it ${motif(s, h.m)}` : ''}.`;
+  else if (kind === 'excellent') text = `Excellent, almost as good as ${best.san}.`;
+  else if (kind === 'good') text = `A good move. ${best.san} was a little stronger: it ${best.why}.`;
+  else {
+    let reason = '';
+    if (sp <= -9000) reason = `It allows mate in ${Math.round((10000 + sp) / 10)}. `;
+    else if (best.cp >= 9000) reason = 'You had a forced mate. ';
+    else if (reply && reply.cap && reply.to === h.m.to) reason = `It hangs your ${PIECE_NAME[h.m.piece[1]]}: ${NAME[them]} can take it on ${sqName(reply.to)}. `;
+    else if (reply && reply.cap) reason = `It lets ${NAME[them]} take your ${PIECE_NAME[reply.cap[1]]} on ${sqName(reply.to)}. `;
+    else if (reply){ const mt = motif(after, reply); if (mt) reason = `It allows ${san(after, reply)}, which ${mt}. `; }
+    text = `${reason}Better was ${best.san}: it ${best.why}.`;
+  }
+  CO.verdict = {ply:p, kind, title:`${h.san} · ${label}`, text, loss,
+    better: played !== best.u ? {from:k, pv:best.pv, text:lineSan(s, best.pv)} : null,
+    punish: r && r.lines[0] && ['inaccuracy', 'mistake', 'blunder'].includes(kind) ? {from:p, pv:r.lines[0].pv, text:lineSan(after, r.lines[0].pv)} : null};
+  if (coachOpts().guard && (kind === 'mistake' || kind === 'blunder')) CO.hold = true;
+}
+// What would the opponent do if it were their move?
+async function coachThreat(){
+  const s = cur(), ply = G.hist.length, id = G.id;
+  if (inCheck(s)){ CO.threat = {ply, text:'You are in check: first get your king out of it (move it, block, or take the checking piece).'}; renderCoach(); return; }
+  CO.threat = {ply, busy:true};
+  renderCoach();
+  const ns = Object.assign({}, s, {turn:opp(s.turn), ep:-1});
+  const ideas = CO.ideas && CO.ideas.ply === ply && CO.ideas.lines && CO.ideas.lines[0];
+  const r = await Engine.boot() ? await Engine.search(`position fen ${C.toFEN(ns)}`, {ms:700, multipv:1}) : null;
+  if (!G || G.id !== id || G.hist.length !== ply) return;
+  const m = r && fromUci(ns, r.best);
+  if (!m){ CO.threat = {ply, text:'No threats found.'}; renderCoach(); return; }
+  // compare with how they stand now (from their side): a big jump means a real threat
+  const gain = povCp(r.lines[0].score), base = ideas ? -ideas.cp : null;
+  const real = gain >= 9000 || (base != null ? gain - base >= 120 : gain >= 150) || !!(m.cap && C.VAL[m.cap[1]] >= 300);
+  const mt = gain >= 9000 ? `mates in ${Math.round((10000 - gain) / 10)}` : motif(ns, m) || (m.cap ? `takes your ${PIECE_NAME[m.cap[1]]}` : '');
+  CO.threat = {ply, m, real, pv:r.lines[0].pv, text: real
+    ? `${NAME[ns.turn]} threatens ${san(ns, m)}${mt ? `, which ${mt}` : ''}. Deal with it: move or defend the target, or make a bigger threat.`
+    : `No serious threat. ${NAME[ns.turn]}’s best idea is ${san(ns, m)}${mt ? ` (it ${mt})` : ''}, so you are free to follow your plan.`};
+  renderCoach();
+}
+// Plain-language plan for the position: opening checklist, middlegame and endgame pointers, loose pieces
+function coachPlan(){
+  const s = cur(), b = s.board, c = G.human, them = opp(c), tips = [];
+  const back = c === 'w' ? 1 : 8, sqIndex = C.sqIndex;
+  const heavy = b.filter(p => p && 'QRBN'.includes(p[1])).length;
+  const phase = heavy <= 6 ? 'endgame' : G.hist.length < 20 ? 'opening' : 'middlegame';
+  // loose pieces first: attacked and not defended
+  for (let i = 0; i < 64; i++){
+    const p = b[i];
+    if (!p || p[0] !== c || p[1] === 'K' || p[1] === 'P') continue;
+    if (C.attacked(b, i, them) && !C.attacked(b, i, c)) tips.push({ok:false, t:`Your ${PIECE_NAME[p[1]]} on ${sqName(i)} is attacked and undefended. Save it first.`});
+  }
+  for (let i = 0; i < 64; i++){
+    const p = b[i];
+    if (p && p[0] === them && p[1] !== 'K' && C.attacked(b, i, c) && !C.attacked(b, i, them)) tips.push({ok:true, t:`The ${PIECE_NAME[p[1]]} on ${sqName(i)} is loose: can you win it?`});
+  }
+  const minorsHome = [['b', 'N'], ['g', 'N'], ['c', 'B'], ['f', 'B']].filter(([f, k]) => b[sqIndex(f + back)] === c + k).length;
+  const k = C.findKing(b, c), castled = [sqIndex('g' + back), sqIndex('c' + back), sqIndex('b' + back), sqIndex('h' + back)].includes(k);
+  const rights = c === 'w' ? s.castle.K || s.castle.Q : s.castle.k || s.castle.q;
+  if (phase === 'opening'){
+    tips.push({ok:!minorsHome, t: minorsHome ? `Develop your pieces: ${minorsHome} knight${minorsHome === 1 ? ' or bishop is' : 's and bishops are'} still at home.` : 'All knights and bishops are developed.'});
+    tips.push({ok:castled, t: castled ? 'Your king is castled.' : rights ? 'Castle soon to get your king safe and connect your rooks.' : 'Your king can no longer castle: keep it covered with pawns and pieces.'});
+    const centre = ['d4', 'e4', 'd5', 'e5'].filter(q => b[sqIndex(q)] === c + 'P').length;
+    tips.push({ok:centre > 0, t: centre ? `You have ${centre} pawn${centre > 1 ? 's' : ''} in the centre.` : 'Fight for the centre with a pawn on e4/d4 (or e5/d5).'});
+    const q = b.indexOf(c + 'Q');
+    if (q >= 0 && q !== sqIndex('d' + back) && minorsHome >= 2) tips.push({ok:false, t:'Your queen came out early: develop the minor pieces before using her.'});
+  }
+  if (phase === 'middlegame'){
+    const diff = materialDiff(c);
+    tips.push({ok:diff >= 0, t: diff > 0 ? `You are ${diff} point${diff > 1 ? 's' : ''} up: trade pieces (not pawns) and keep it simple.` : diff < 0 ? `You are ${-diff} point${diff < -1 ? 's' : ''} down: keep pieces on, look for active play and threats.` : 'Material is level: improve your worst piece and look for targets.'});
+    if (castled){
+      const dir = c === 'w' ? -8 : 8, shield = [-1, 0, 1].filter(d => { const f = (k & 7) + d; return f >= 0 && f < 8 && [k + dir + d, k + 2 * dir + d].some(i => b[i] === c + 'P'); }).length;
+      tips.push({ok:shield >= 2, t: shield >= 2 ? 'Your king has a solid pawn shield.' : 'Your king’s pawn cover is thin: be careful about attacks.'});
+    } else tips.push({ok:false, t:'Your king is still in the centre: get it to safety.'});
+    const open = [...'abcdefgh'].filter((f, i) => !b.some((p, j) => p && p[1] === 'P' && (j & 7) === i));
+    const rookOn = open.filter(f => b.some((p, j) => p === c + 'R' && (j & 7) === 'abcdefgh'.indexOf(f)));
+    if (open.length) tips.push({ok:rookOn.length > 0, t: rookOn.length ? `Your rook controls the open ${rookOn[0]}-file.` : `Put a rook on the open ${open[0]}-file.`});
+  }
+  if (phase === 'endgame'){
+    const kf = k & 7, kr = k >> 3, centreDist = Math.max(Math.abs(kf - 3.5), Math.abs(kr - 3.5));
+    tips.push({ok:centreDist < 2.5, t: centreDist < 2.5 ? 'Your king is active. Use it to attack pawns and support your own.' : 'Endgame: bring your king towards the centre. It is a strong piece now.'});
+    const passed = (col, i) => { const f = i & 7, r = i >> 3, dir = col === 'w' ? -1 : 1; for (let rr = r + dir; rr >= 0 && rr < 8; rr += dir) for (const ff of [f - 1, f, f + 1]) if (ff >= 0 && ff < 8 && b[rr * 8 + ff] === opp(col) + 'P') return false; return true; };
+    const mineP = [], theirP = [];
+    b.forEach((p, i) => { if (p === c + 'P' && passed(c, i)) mineP.push(i); if (p === them + 'P' && passed(them, i)) theirP.push(i); });
+    if (mineP.length) tips.push({ok:true, t:`Your ${sqName(mineP[0])[0]}-pawn is passed: push it, with your rook behind it.`});
+    if (theirP.length) tips.push({ok:false, t:`Stop the passed ${sqName(theirP[0])[0]}-pawn: block it, ideally with your king.`});
+    if (!mineP.length && !theirP.length) tips.push({ok:true, t:'Create a passed pawn where you have more pawns than your opponent.'});
+  }
+  return {phase, tips: tips.slice(0, 7)};
+}
+// Every opening-book continuation from here, with the opening it leads to
+function coachBook(){
+  const ucis = G.hist.map(h => uci(h.m)), prefix = ucis.join(' '), n = ucis.length, s = cur(), seen = new Map();
+  if (n >= 30) return [];
+  for (const [line, o] of GW.OPEN_BY_LINE){
+    if (prefix && !line.startsWith(prefix + ' ')) continue;
+    const mv = line.split(' ')[n];
+    if (!mv) continue;
+    const e = seen.get(mv) || {u:mv, count:0, name:'', eco:'', len:99};
+    e.count++;
+    const len = line.split(' ').length;
+    if (len < e.len){ e.len = len; e.name = o.name; e.eco = o.eco; }
+    seen.set(mv, e);
+  }
+  return [...seen.values()].map(e => { const m = fromUci(s, e.u); return m ? Object.assign(e, {m, san:san(s, m)}) : null; }).filter(Boolean).sort((a, b) => b.count - a.count);
+}
+function startPreview(fromPly, pv, label){
+  const base = G.states[fromPly], {states, moves} = lineMoves(base, pv);
+  if (!moves.length) return;
+  CO.preview = {states, moves, i:0, label};
+  clearInterval(CO.timer);
+  showPreview(1);
+  CO.timer = setInterval(() => { if (!CO.preview || CO.preview.i >= CO.preview.moves.length){ clearInterval(CO.timer); return; } showPreview(CO.preview.i + 1); }, 1100);
+}
+function showPreview(i){
+  const P = CO.preview;
+  if (!P) return;
+  const fwd = i === P.i + 1;
+  P.i = Math.max(0, Math.min(P.moves.length, i));
+  const m = P.i ? P.moves[P.i - 1] : null;
+  gameBoard.flipped = ui.flipped;
+  gameBoard.set(P.states[P.i], {last:m, slides: fwd && m ? slidesFor(m, false) : null});
+  if (fwd && m) sfx.forMove(moveKind(m, P.states[P.i]), true);
+  renderCoach();
+}
+function endPreview(){
+  clearInterval(CO.timer);
+  if (!CO.preview) return;
+  CO.preview = null;
+  syncBoard(null);
+  coachArrows();
+  renderGame();
+}
+// Arrows for the selected idea: your move in green, the expected reply in red
+function coachArrows(){
+  if (!G || !G.coach || CO.preview || ui.view != null) return;
+  const a = [];
+  if (humanTurn()){
+    if (CO.tab === 'ideas' && CO.ideas && CO.ideas.lines){
+      const l = CO.ideas.lines[Math.max(0, CO.sel)];
+      if (l && CO.sel >= 0){
+        a.push({from:l.m.from, to:l.m.to, color:'g'});
+        const nx = lineMoves(cur(), l.pv, 2).moves[1];
+        if (nx && CO.sel >= 0) a.push({from:nx.from, to:nx.to, color:'r'});
+      }
+    }
+    if (CO.tab === 'threat' && CO.threat && CO.threat.m && CO.threat.ply === G.hist.length) a.push({from:CO.threat.m.from, to:CO.threat.m.to, color:'r'});
+    if (CO.tab === 'open' && CO.sel >= 0){ const e = coachBook()[CO.sel]; if (e) a.push({from:e.m.from, to:e.m.to, color:'b'}); }
+  }
+  gameBoard.auto = a;
+  gameBoard.render();
+}
+function renderCoach(){
+  const el = $('coachPanel');
+  if (!el) return;
+  el.hidden = !(G && G.coach);
+  if (el.hidden) return;
+  // the verdict on your latest move stays up until you move again
+  const who = D.PEOPLE.coach, latest = G.hist.length - (cur().turn === G.human ? 1 : 0);
+  const v = CO.verdict && (CO.hold || CO.verdict.ply === latest) ? CO.verdict : null;
+  const my = humanTurn();
+  let say;
+  if (G.over) say = 'Game over. Open Game Review to go through every move with me.';
+  else if (CO.hold) say = 'Hold on! Look at this before your opponent replies.';
+  else if (!my) say = `${playerOf(G, opp(G.human)).name} is thinking…`;
+  else say = CO.preview ? `Playing through: ${CO.preview.label}` : 'Your move. Pick a tab for ideas, threats, opening lines or a plan.';
+  let html = `<div class="cp-head"><div class="av">${avatarSVG(who)}</div><div class="grow"><b>${esc(who.name)}</b><p>${esc(say)}</p></div></div>`;
+  if (v) html += `<div class="cp-verdict k-${v.kind}"><h4>${GW.clsIcon(v.kind)}${esc(v.title)}</h4><p>${esc(v.text)}</p><div class="cp-acts">` +
+    (v.better ? `<button class="btn" type="button" data-cp="better">Show the better line</button>` : '') +
+    (v.punish ? `<button class="btn" type="button" data-cp="punish">Show what they can do</button>` : '') +
+    (CO.hold ? `<button class="btn pop" type="button" data-cp="undo">Take it back</button><button class="btn ghost" type="button" data-cp="go">Play on</button>` :
+      v.punish && !G.over && G.hist.length ? `<button class="btn ghost" type="button" data-cp="undo">Take back</button>` : '') + `</div></div>`;
+  if (CO.preview){
+    const P = CO.preview, sanList = [];
+    for (let i = 0; i < P.moves.length; i++){ const st = P.states[i]; sanList.push(`<button type="button" class="mv${i === P.i - 1 ? ' cur' : ''}" data-pv="${i + 1}">${st.turn === 'w' ? st.full + '.' : i ? '' : st.full + '…'}${san(st, P.moves[i])}</button>`); }
+    html += `<div class="cp-line">${sanList.join(' ')}</div><div class="cp-nav"><button class="btn" type="button" data-pv="0" aria-label="Start">⏮</button><button class="btn" type="button" data-pv="${P.i - 1}" aria-label="Back">◀</button><button class="btn" type="button" data-pv="${P.i + 1}" aria-label="Forward">▶</button><button class="btn pop grow" type="button" data-cp="end">Back to the game</button></div>`;
+    el.innerHTML = html;
+    return;
+  }
+  if (my && !CO.hold){
+    const tabs = [['ideas', 'Best moves'], ['open', 'Openings'], ['threat', 'Threats'], ['plan', 'Plan']];
+    html += `<div class="tabs small cp-tabs">${tabs.map(([k, t]) => `<button type="button" data-ct="${k}" aria-pressed="${CO.tab === k}">${t}</button>`).join('')}</div><div class="cp-body">`;
+    if (CO.tab === 'ideas'){
+      const I = CO.ideas && CO.ideas.ply === G.hist.length ? CO.ideas : null;
+      if (!I) html += `<button class="btn pop" type="button" data-cp="ideas">Show my best moves</button>`;
+      else if (!I.lines) html += '<div class="muted small">Thinking about your options…</div>';
+      else if (!I.lines.length) html += '<div class="muted small">No moves to suggest.</div>';
+      else html += `<div class="muted small">Top moves, best first. Scores are from your side (+1.0 ≈ a pawn up). Tap a move to see it, ▶ to play the whole line.</div>` +
+        I.lines.map((l, i) => `<div class="cp-idea${i === CO.sel ? ' on' : ''}"><button type="button" class="cp-pick" data-sel="${i}"><span class="cp-rank">${i + 1}</span><b>${esc(l.san)}</b><span class="ev">${fmtEval(l.cp)}</span><span class="cp-why">${esc(l.why)}</span><span class="cp-pv">${esc(l.text)}</span></button><button class="btn cp-play" type="button" data-play="${i}" aria-label="Play this line">▶</button></div>`).join('');
+    } else if (CO.tab === 'open'){
+      const op = GW.openingName(G.hist.map(h => uci(h.m))), list = coachBook();
+      html += op ? `<div class="cp-op"><b>${esc(op.eco)} · ${esc(op.name)}</b></div>` : '';
+      html += list.length ? `<div class="muted small">Every book move from here (${list.length}), most played first. Tap one to see it.</div><div class="cp-book">${list.map((e, i) => `<button type="button" class="cp-bk${i === CO.sel ? ' on' : ''}" data-sel="${i}"><b>${esc(e.san)}</b><span>${esc(e.eco)} · ${esc(e.name)}</span><span class="muted">${e.count} line${e.count > 1 ? 's' : ''}</span></button>`).join('')}</div>`
+        : '<div class="muted small">You are out of the opening book now. Use Best moves for the engine’s ideas.</div>';
+    } else if (CO.tab === 'threat'){
+      const T = CO.threat && CO.threat.ply === G.hist.length ? CO.threat : null;
+      if (!T) html += `<div class="muted small">What is your opponent planning? I can show what they would play if it were their move.</div><button class="btn pop" type="button" data-cp="threat">What’s the threat?</button>`;
+      else if (T.busy) html += '<div class="muted small">Looking at your opponent’s ideas…</div>';
+      else html += `<div class="cp-threat ${T.real ? 'bad' : 'ok'}">${esc(T.text)}</div>` + (T.pv ? `<button class="btn" type="button" data-cp="threatline">Play the threat through</button>` : '');
+    } else {
+      const P = coachPlan();
+      html += `<div class="label">${P.phase[0].toUpperCase() + P.phase.slice(1)}</div><ul class="cp-plan">${P.tips.map(t => `<li class="${t.ok ? 'ok' : 'todo'}">${t.ok ? '✓' : '•'} ${esc(t.t)}</li>`).join('')}</ul>`;
+    }
+    html += '</div>';
+    html += `<div class="cp-opts"><div class="switch compact">Show best moves automatically<button type="button" data-copt="coachAuto" aria-pressed="${coachOpts().auto}" aria-label="Show best moves automatically"></button></div><div class="switch compact">Stop me before mistakes<button type="button" data-copt="coachGuard" aria-pressed="${coachOpts().guard}" aria-label="Stop me before mistakes"></button></div></div>`;
+  }
+  el.innerHTML = html;
+  coachArrows();
+}
+// Called after every move and when the game starts: think about your options when it is your turn
+function coachTick(){
+  if (!G || !G.coach) return;
+  if (humanTurn() && coachOpts().auto) coachIdeas();
+  renderCoach();
+}
+function coachPlayOn(){
+  CO.hold = false;
+  renderGame();
+  maybeCpu();
+}
+
 const cpuToMove = () => G && !G.over && !ui.paused && !ui.away && G.bots[cur().turn] != null;
-const humanCanMove = () => G && ui.view == null && (G.mode !== 'online' || cur().turn === G.human) && !ui.thinking && !G.over && !ui.paused && G.bots[cur().turn] == null && GW.currentScreen() === 'game';
+const humanCanMove = () => G && ui.view == null && !CO.preview && (G.mode !== 'online' || cur().turn === G.human) && !ui.thinking && !G.over && !ui.paused && G.bots[cur().turn] == null && GW.currentScreen() === 'game';
 
 async function maybeCpu(){
   if (!cpuToMove()) return;
+  if (G.coach && CO.hold) return;
+  // the coach looks at your move before the bot answers it
+  if (G.coach && G.hist.length && CO.judged !== G.hist.length && G.states[G.hist.length - 1].turn === G.human){
+    const jt = ++thinkToken, g = G;
+    ui.thinking = true;
+    renderGame();
+    await coachJudge();
+    if (jt !== thinkToken || g !== G) return;
+    ui.thinking = false;
+    if (CO.hold){ GW.buzz([40, 60, 40]); renderGame(); return; }
+  }
   const token = ++thinkToken;
   ui.thinking = true;
   renderGame();
@@ -535,7 +881,7 @@ function materialDiff(color){
   for (const p of cur().board) if (p) d += (p[0] === color ? 1 : -1) * C.VAL[p[1]];
   return Math.round(d / 100);
 }
-const isRated = () => G && G.rated && !G.assisted && !G.tookBack;
+const isRated = () => G && G.rated && !G.assisted && !G.tookBack && !G.coach;
 
 function renderGame(){
   if (!G) return;
@@ -571,7 +917,7 @@ function renderGame(){
   else if (ui.paused){ title = 'Paused'; sub = `Move ${s.full} · ${NAME[s.turn]} to play`; }
   else if (G.mode === 'cpu'){
     title = s.turn === G.human ? (st.check ? 'You are in check' : 'Your move') : `${D.BOTS[G.bots[s.turn]].name} is thinking`;
-    sub = `${G.cup ? `${D.CUPS.find(c => c.id === G.cup.id).name} ${['quarterfinal', 'semifinal', 'final'][G.cup.round]} · ` : ''}Move ${s.full} · ${G.rated ? (isRated() ? 'Rated' : 'Unrated (hint or takeback used)') : 'Casual'} · ${tcLabel(G.tc)}`;
+    sub = `${G.cup ? `${D.CUPS.find(c => c.id === G.cup.id).name} ${['quarterfinal', 'semifinal', 'final'][G.cup.round]} · ` : ''}Move ${s.full} · ${G.coach ? 'With Coach' : G.rated ? (isRated() ? 'Rated' : 'Unrated (hint or takeback used)') : 'Casual'} · ${tcLabel(G.tc)}`;
   } else if (G.mode === 'online'){
     title = s.turn === G.human ? (st.check ? 'You are in check' : 'Your move') : `${playerOf(G, opp(G.human)).name} to move`;
     sub = `Online · Move ${s.full} · ${tcLabel(G.tc)}`;
@@ -598,13 +944,14 @@ function renderGame(){
     else list.querySelector('.mv.cur')?.scrollIntoView({block:'nearest'});
   }
   const human = G.mode !== 'cvc';
-  $('hintBtn').hidden = !human || st.over || !!G.cup || G.mode === 'online';
+  $('hintBtn').hidden = !human || st.over || !!G.cup || G.mode === 'online' || !!G.coach;
   $('undoBtn').hidden = !human || st.over || !!G.cup || G.mode === 'online';
   $('pauseBtn').hidden = G.mode !== 'cvc';
   $('drawBtn').hidden = G.mode === 'cvc' || st.over;
   $('drawBtn').disabled = !humanCanMove() || G.hist.length < 2;
   $('newBtn').hidden = $('newBtn').hidden || (G.mode === 'online' && !st.over);
   $('liveBtn').hidden = ui.view == null;
+  renderCoach();
   persistGame();
   $('undoBtn').disabled = !G.hist.length || (G.mode === 'cpu' && !G.hist.some((h, k) => G.states[k].turn === G.human));
   $('hintBtn').disabled = !humanCanMove();
@@ -690,7 +1037,7 @@ function archiveGame(st){
   if (G.hist.length < 2) return;
   const list = archive();
   const op = GW.openingName(G.hist.map(h => uci(h.m)));
-  list.unshift({t:Date.now(), mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated, moves:G.hist.map(h => uci(h.m)),
+  list.unshift({t:Date.now(), mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated, coach:!!G.coach || undefined, moves:G.hist.map(h => uci(h.m)),
     result:st.result, reason:st.reason, winner:st.winner || null, delta:G.outcome && G.outcome.delta, opening: op ? op.name : '',
     online: G.online ? {opp: G.online.opp} : undefined});
   try { localStorage.setItem('gw-archive', JSON.stringify(list.slice(0, 80))); } catch (_) {}
@@ -750,7 +1097,7 @@ function showResult(st){
       <button class="btn ghost" id="resClose" type="button">View board</button></div>`);
   m.querySelector('#resReview')?.addEventListener('click', () => { GW.closeModal(); startReview(G); });
   m.querySelector('#resRematch')?.addEventListener('click', e => {
-    if (G.mode !== 'online') return startGame({mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated});
+    if (G.mode !== 'online') return startGame({mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated, coach:G.coach});
     if (G.oppLeft || !GW.Online.send({t:'rematch', n:gameNo()})){ GW.toast('Your opponent has left, so a rematch isn’t possible.'); return; }
     G.rematchAsked = true;
     e.target.disabled = true; e.target.textContent = 'Rematch asked…';
@@ -762,6 +1109,29 @@ function showResult(st){
 }
 
 $('hintBtn').addEventListener('click', hint);
+$('coachPanel').addEventListener('click', e => {
+  if (!G || !G.coach) return;
+  const b = e.target.closest('button');
+  if (!b) return;
+  const d = b.dataset;
+  if (d.ct){ CO.tab = d.ct; CO.sel = -1; if (d.ct === 'ideas') coachIdeas(); renderCoach(); return; }
+  if (d.copt){ setup[d.copt] = !coachOpts()[d.copt === 'coachAuto' ? 'auto' : 'guard']; store.set('gw-setup', setup); if (d.copt === 'coachAuto' && setup.coachAuto) coachIdeas(); renderCoach(); return; }
+  if (d.sel != null){ CO.sel = CO.sel === +d.sel ? -1 : +d.sel; renderCoach(); return; }
+  if (d.play != null){ const l = CO.ideas && CO.ideas.lines && CO.ideas.lines[+d.play]; if (l) startPreview(G.hist.length, l.pv, `${l.san} line`); return; }
+  if (d.pv != null){ clearInterval(CO.timer); showPreview(+d.pv); return; }
+  const v = CO.verdict;
+  if (d.cp === 'ideas') coachIdeas();
+  else if (d.cp === 'threat') coachThreat();
+  else if (d.cp === 'threatline' && CO.threat && CO.threat.pv){
+    const s0 = cur(), ns = Object.assign({}, s0, {turn:opp(s0.turn), ep:-1}), {states, moves} = lineMoves(ns, CO.threat.pv);
+    if (moves.length){ CO.preview = {states, moves, i:0, label:'the threat'}; clearInterval(CO.timer); showPreview(1); CO.timer = setInterval(() => { if (!CO.preview || CO.preview.i >= CO.preview.moves.length) return clearInterval(CO.timer); showPreview(CO.preview.i + 1); }, 1100); }
+  }
+  else if (d.cp === 'better' && v && v.better) startPreview(v.better.from, v.better.pv, 'the better line');
+  else if (d.cp === 'punish' && v && v.punish) startPreview(v.punish.from, v.punish.pv, 'their best reply');
+  else if (d.cp === 'end') endPreview();
+  else if (d.cp === 'undo'){ if (CO.preview) endPreview(); undo(); }
+  else if (d.cp === 'go'){ if (CO.preview) endPreview(); coachPlayOn(); }
+});
 $('undoBtn').addEventListener('click', undo);
 $('pauseBtn').addEventListener('click', togglePause);
 $('flipBtn').addEventListener('click', () => { if (!G) return; ui.flipped = !ui.flipped; gameBoard.flipped = ui.flipped; gameBoard.render(); renderGame(); });
@@ -1030,7 +1400,8 @@ function coachText(){
     text = `${h.san} is ${kind === 'inaccuracy' ? 'an' : 'a'} ${label.toLowerCase()}. ${reason}The best move was ${bestSan}${bestWhy ? `, which ${bestWhy}` : ''}.`;
     if (phase === 'opening' && !reason) text += ' In the opening, focus on development, the centre and king safety.';
   }
-  return {title:`${h.san} · ${label}`, kind, text, ev: R.ev[R.ply]};
+  const line = !['best', 'great', 'book'].includes(kind) && R.bestPv[k] && R.bestPv[k].length > 1 ? lineSan(s, R.bestPv[k], 8) : '';
+  return {title:`${h.san} · ${label}`, kind, text, ev: R.ev[R.ply], line};
 }
 
 function renderReview(){
@@ -1071,7 +1442,7 @@ function renderReview(){
   bar.querySelector('.num.bot').style.color = R.flipped ? '#f4f4fb' : '#2b2950';
   const ct = coachText();
   $('rvCoach').hidden = !ct;
-  if (ct) $('rvCoach').innerHTML = `<div class="av">${avatarSVG(D.PEOPLE.coach)}</div><div class="grow"><h3>${ct.kind ? GW.clsIcon(ct.kind) : ''}${esc(ct.title)}${ct.ev !== undefined ? `<span class="ev">${fmtEval(ct.ev)}</span>` : ''}</h3><p>${esc(ct.text)}</p></div>`;
+  if (ct) $('rvCoach').innerHTML = `<div class="av">${avatarSVG(D.PEOPLE.coach)}</div><div class="grow"><h3>${ct.kind ? GW.clsIcon(ct.kind) : ''}${esc(ct.title)}${ct.ev !== undefined ? `<span class="ev">${fmtEval(ct.ev)}</span>` : ''}</h3><p>${esc(ct.text)}</p>${ct.line ? `<p class="cp-pv">Best line: ${esc(ct.line)}</p>` : ''}</div>`;
   let g = '<rect width="400" height="96" fill="#2b2950"/>';
   if (have > 0){
     const x = i => N ? i / N * 400 : 0, y = i => 96 - winPct(Math.max(-1500, Math.min(1500, R.ev[i]))) * 0.96;
@@ -1314,10 +1685,10 @@ GW.snapshotGame = () => {
   if (!G || G.over || G.mode === 'online') return null;
   const times = G.times.map(t => Object.assign({}, t));
   if (clockRunning()) times[times.length - 1][cur().turn] = clockLeft(cur().turn);
-  return {mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated, cup:G.cup || null, moves:G.hist.map(h => uci(h.m)), times, flipped:ui.flipped};
+  return {mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated, coach:!!G.coach, cup:G.cup || null, moves:G.hist.map(h => uci(h.m)), times, flipped:ui.flipped};
 };
 GW.restoreGame = g => {
-  startGame({mode:g.mode, human:g.human, bots:g.bots, tc:g.tc, rated:g.rated});
+  startGame({mode:g.mode, human:g.human, bots:g.bots, tc:g.tc, rated:g.rated, coach:!!g.coach});
   if (g.cup) G.cup = g.cup;
   for (const u of g.moves){
     const s = cur(), m = fromUci(s, u);
@@ -1328,8 +1699,10 @@ GW.restoreGame = g => {
   if (Array.isArray(g.times) && g.times.length === G.states.length) G.times = g.times;
   ui.flipped = !!g.flipped;
   thinkToken++;
+  resetCoach();
   syncBoard(null);
   renderGame();
   maybeCpu();
+  coachTick();
 };
 })();

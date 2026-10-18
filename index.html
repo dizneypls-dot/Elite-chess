@@ -590,6 +590,8 @@ button.mv:hover{background:var(--surface)}
 .me-card{display:flex;gap:16px;align-items:center}
 .av.huge{width:110px;height:110px;border-radius:24px;box-shadow:0 10px 24px -12px rgba(0,0,0,.45)}
 .name-in{font:800 20px var(--f-head)}
+.country-in{margin-top:8px;font:700 15px var(--f-body,inherit);padding-right:10px}
+.me-card select{width:100%}
 .parts{display:flex;flex-wrap:wrap;gap:6px}
 .parts button{border:0;cursor:pointer;border-radius:10px;box-shadow:0 2px 0 var(--line-deep)}
 .parts button.sw{width:32px;height:32px;background:var(--sw)}
@@ -765,6 +767,43 @@ body.landing-open{overflow:hidden}
 .famous-mini{width:110px;flex:none}
 @media (max-width:520px){.game-grid{grid-template-columns:1fr}.famous-mini{width:84px}}
 .mv.noted{box-shadow:inset 0 -2px 0 var(--accent)}
+/* ---------- Coach panel (live advice in coach games) ---------- */
+#coachRow span{display:flex;flex-direction:column}
+#coachRow small{font-weight:500;font-size:12px}
+.coach-panel{display:flex;flex-direction:column;gap:10px;background:var(--surface-2);border-radius:16px;padding:12px}
+.cp-head{display:flex;gap:10px;align-items:center}
+.cp-head .av{width:44px;height:44px;border-radius:12px}
+.cp-head p{margin:2px 0 0;font-size:14px}
+.cp-verdict{background:var(--surface);border-radius:12px;padding:10px 12px;border-left:4px solid var(--accent)}
+.cp-verdict h4{margin:0;font-size:15px;display:flex;align-items:center;gap:6px}
+.cp-verdict p{margin:4px 0 0;font-size:14px}
+.cp-verdict.k-inaccuracy{border-color:#f0b429}.cp-verdict.k-mistake{border-color:#ff8f1f}.cp-verdict.k-blunder{border-color:#e5484d}
+.cp-verdict.k-best,.cp-verdict.k-great,.cp-verdict.k-excellent{border-color:#22b07d}.cp-verdict.k-book{border-color:#a07850}
+.cp-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cp-acts .btn,.cp-nav .btn{padding:7px 10px;font-size:13px}
+.cp-body{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto}
+.cp-idea{display:flex;gap:6px;align-items:stretch}
+.cp-pick,.cp-bk{flex:1;min-width:0;display:grid;grid-template-columns:auto auto 1fr;gap:2px 8px;align-items:center;text-align:left;border:0;background:var(--surface);border-radius:10px;padding:8px 10px;cursor:pointer;color:var(--ink);font:inherit}
+.cp-idea.on .cp-pick,.cp-bk.on{box-shadow:0 0 0 2px var(--accent)}
+.cp-rank{width:20px;height:20px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;font:800 11px var(--f-head)}
+.cp-pick .ev{font:700 12px var(--f-mono);background:var(--surface-2);border-radius:6px;padding:1px 6px;justify-self:end}
+.cp-why{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.cp-pv{grid-column:1/-1;font:600 12px var(--f-mono);color:var(--ink);opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-play{padding:0 12px}
+.cp-book{display:flex;flex-direction:column;gap:5px}
+.cp-bk{grid-template-columns:auto 1fr auto}
+.cp-bk span{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-op{font-size:14px}
+.cp-threat{border-radius:10px;padding:10px 12px;font-size:14px;background:var(--surface)}
+.cp-threat.bad{box-shadow:inset 4px 0 0 #e5484d}.cp-threat.ok{box-shadow:inset 4px 0 0 #22b07d}
+.cp-plan{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.cp-plan li{background:var(--surface);border-radius:10px;padding:8px 10px}
+.cp-plan li.ok{color:var(--ink)}.cp-plan li.todo{box-shadow:inset 3px 0 0 var(--gold)}
+.cp-line{display:flex;flex-wrap:wrap;gap:4px;font:600 13px var(--f-mono)}
+.cp-line .mv{border:0;background:var(--surface);border-radius:6px;padding:3px 6px;cursor:pointer;color:var(--ink);font:inherit}
+.cp-line .mv.cur{background:var(--accent);color:#fff}
+.cp-nav{display:flex;gap:6px}
+.cp-opts{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
 .coach.hot{background:color-mix(in srgb,var(--gold) 18%,var(--surface));animation:pop .25s ease-out}
 
 /* ---------- Customize ---------- */

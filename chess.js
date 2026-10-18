@@ -401,6 +401,8 @@ const Engine = {
     return this.ready;
   },
   newGame(){ if (this.worker) this.worker.postMessage('ucinewgame'); },
+  // ends the running search early: it still answers with the lines it has found so far
+  stop(){ if (this.worker && this.onLine) this.worker.postMessage('stop'); },
   // Stockfish 17.1 is the strong, calibrated engine; the older builds are fallbacks
   get modern(){ return this.kind === 'sf17' || this.kind === 'sf17blob'; },
   get fast(){ return this.modern || this.kind === 'wasm'; },
