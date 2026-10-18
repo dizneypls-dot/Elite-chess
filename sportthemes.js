@@ -222,77 +222,31 @@ const holidays = DATA.packsFor;
 DATA.packsFor = (d, hemi) => { const sp = sportPackNow(), rest = holidays(d, hemi); return sp ? [sp, ...rest] : rest; };
 DATA.sportPackNow = sportPackNow;
 
-/* ---------- flyovers ---------- */
-const {lin, rad, rep, turn, bob, blink, glint, trail, scatter} = A;
-const spin = (dur, cx = 0, cy = 0) => `<animateTransform attributeName="transform" type="rotate" values="0 ${cx} ${cy};360 ${cx} ${cy}"${rep(dur)}/>`;
-const speed = (x0, x1, ys, col) => ys.map((y, i) => `<path d="M${x0} ${y}H${x1}" stroke="${col}" stroke-width="${1.4 + (i % 2)}" stroke-linecap="round" opacity="0"><animate attributeName="opacity" values="0;.7;0"${rep(.5, i * .12)}/><animateTransform attributeName="transform" type="translate" values="12 0;-12 0"${rep(.5, i * .12)}/></path>`).join('');
-// any ball whizzing across with a streak behind it
-const ballFly = (id, inner, col, spinDur = .6) => A.svg('0 0 170 50', lin(id + 'T', [[0, col, 0], [1, col, .7]], 1, 0),
-  `<path d="M10 25C50 18 90 32 128 25" stroke="url(#${id}T)" stroke-width="10" stroke-linecap="round" fill="none" opacity=".55"/>` + speed(40, 110, [16, 34, 22, 30], col) +
-  `<g transform="translate(145 25)"><g>${spin(spinDur)}<g transform="scale(.95)">${inner}</g></g></g>`);
-const pc = s => s.pal.w;   // flyovers use the light palette
-const ball = id => BALL[(SPORTS.find(s => s.id === id) || SPORTS[0]).pawn](Object.assign({ink:'#1a1a1a'}, pc(SPORTS.find(s => s.id === id))));
-// F1 car, side view, facing right
-const f1car = A.svg('0 0 200 60', lin('f1Body', [[0, '#ff3b30'], [.6, '#e10600'], [1, '#8a0000']]) + rad('f1Tyre', [[0, '#3a3a3a'], [1, '#0a0a0a']]),
-  speed(0, 60, [22, 34, 44, 28], '#ffffff') +
-  `<path d="M40 44h126c8 0 14-4 16-10l-30-4-26-8H96l-10 6H58l-14-12H30l4 16c-6 2-8 6-6 12z" fill="url(#f1Body)" stroke="#2a0000" stroke-width="1.6"/>
-   <path d="M26 14h18v6H26zM28 20l4 16" fill="#1a1a1a" stroke="#1a1a1a" stroke-width="2"/><path d="M24 12h22" stroke="#e10600" stroke-width="3"/>
-   <path d="M170 38h22l2 6h-26z" fill="#1a1a1a"/><path d="M98 22c6-8 18-8 22 0" fill="none" stroke="#1a1a1a" stroke-width="3"/>
-   <circle cx="106" cy="24" r="6" fill="#ffd23f" stroke="#1a1a1a" stroke-width="1.2"/><path d="M101 24h10" stroke="#1a1a1a" stroke-width="2"/>
-   <path d="M66 32h60" stroke="#fff" stroke-width="2" opacity=".6"/><text x="140" y="40" font-size="9" font-weight="800" fill="#fff" font-family="sans-serif">1</text>
-   ${[[52, 46], [158, 46]].map(([x, y]) => `<g transform="translate(${x} ${y})"><circle r="11" fill="url(#f1Tyre)"/><circle r="6" fill="#c9ced8"/><g>${spin(.18)}<path d="M-6 0H6M0-6V6" stroke="#5a5f6a" stroke-width="1.6"/></g><circle r="9" fill="none" stroke="#ffd23f" stroke-width="1"/></g>`).join('')}`);
-// MotoGP rider tucked in on the bike, facing right
-const motoBike = A.svg('0 0 150 80', lin('mgBody', [[0, '#ff4d4d'], [1, '#a30000']]) + rad('mgTyre', [[0, '#333'], [1, '#050505']]),
-  speed(0, 40, [30, 44, 56], '#ffffff') +
-  `<g>${bob(-1.4, .3)}
-   ${[[40, 62], [112, 62]].map(([x, y]) => `<g transform="translate(${x} ${y})"><circle r="14" fill="url(#mgTyre)"/><circle r="8" fill="#c9ced8"/><g>${spin(.2)}<path d="M-8 0H8M0-8V8M-6-6L6 6" stroke="#6b7280" stroke-width="1.4"/></g></g>`).join('')}
-   <path d="M44 56l20-22h40l18 10-6 14H60z" fill="url(#mgBody)" stroke="#2a0000" stroke-width="1.6"/><path d="M104 34l16 12" stroke="#1a1a1a" stroke-width="3"/><path d="M98 32c6-6 14-6 18 0" fill="#9ad7ff" stroke="#1a1a1a" stroke-width="1.2"/>
-   <text x="70" y="52" font-size="12" font-weight="900" fill="#fff" font-family="sans-serif">93</text>
-   <path d="M56 36c6-12 22-18 36-14l4 8-28 10z" fill="#1a1a1a"/><path d="M60 36l-8 14 10 4" fill="none" stroke="#1a1a1a" stroke-width="6" stroke-linecap="round"/>
-   <circle cx="92" cy="24" r="9" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.4"/><path d="M90 22h10c1 3 0 6-2 6h-8z" fill="#2a2f3a"/><path d="M84 18c4-2 10-2 14 2" stroke="#d50000" stroke-width="2.4" fill="none"/></g>`);
-// golf: the ball flies onto the green and drops in
-const golfShot = A.svg('0 0 200 90', '', `<path d="M10 80Q100 -20 170 74" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 5" opacity=".8"><animate attributeName="stroke-dashoffset" values="200;0" dur="1.6s" fill="freeze"/></path>
-  <ellipse cx="172" cy="80" rx="20" ry="5" fill="#2e7d32" opacity=".8"/><ellipse cx="172" cy="79" rx="4" ry="1.4" fill="#0a0a0a"/><path d="M172 79V44" stroke="#fff" stroke-width="1.6"/><path d="M172 44l16 5-16 5z" fill="#e5484d"/>
-  <g><circle r="4.4" fill="#fff" stroke="#9aa3b2" stroke-width=".8"/><animateMotion dur="1.8s" fill="freeze" path="M10 80Q100 -20 170 74 L172 79" keyPoints="0;.92;1" keyTimes="0;.8;1" calcMode="linear"/></g>
-  ${glint(172, 66, 6, 1, 1.8, '#fff6c8')}`);
-// football: a curling shot into the top corner
-const goal = A.svg('0 0 200 90', '', `<g opacity=".9"><path d="M150 20h44v62h-44z" fill="none" stroke="#fff" stroke-width="3"/>${Array.from({length: 8}, (_, i) => `<path d="M${152 + i * 5.4} 20v62" stroke="#fff" stroke-width=".6" opacity=".6"/>`).join('')}${Array.from({length: 9}, (_, i) => `<path d="M150 ${24 + i * 7}h44" stroke="#fff" stroke-width=".6" opacity=".6"/>`).join('')}</g>
-  <path d="M10 76C70 70 120 10 166 30" fill="none" stroke="#fff" stroke-width="1.4" stroke-dasharray="3 6" opacity=".7"/>
-  <g><g>${spin(.5)}<g transform="scale(.42)">${ball('football')}</g></g><animateMotion dur="1.5s" fill="freeze" path="M10 76C70 70 120 10 166 30"/></g>
-  ${trail(scatter(8, 150, 196, 18, 50, 2, 4, 9), ['#fff6c8', '#ffffff', '#ffd23f'], 1.4)}`);
-// basketball: up and through the hoop
-const hoopShot = A.svg('0 0 200 100', '', `<rect x="166" y="14" width="30" height="22" rx="2" fill="#fff" stroke="#1a1a1a" stroke-width="1.4"/><rect x="172" y="20" width="12" height="9" fill="none" stroke="#ee6730" stroke-width="1.4"/>
-  <path d="M156 38h22" stroke="#ee6730" stroke-width="3"/><path d="M158 39l3 14M163 39l1 14M170 39l-1 14M176 39l-3 14M159 46h18" stroke="#fff" stroke-width="1"><animate attributeName="stroke-width" values="1;1;2;1" keyTimes="0;.7;.8;1" dur="1.8s" fill="freeze"/></path>
-  <g><g>${spin(.8)}<g transform="scale(.5)">${ball('basketball')}</g></g><animateMotion dur="1.8s" fill="freeze" path="M10 90Q90 -30 167 38 L167 70" keyPoints="0;.85;1" keyTimes="0;.75;1" calcMode="linear"/></g>`);
-// hockey: a puck sliding with ice spray
-const puckSlide = A.svg('0 0 140 40', '', scatter(12, 0, 30, 14, 36, 1.2, 2.6, 6).map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#e8f2ff" opacity="0">${blink(.5, i * .05)}</circle>`).join('') +
-  `<path d="M30 30h80" stroke="#cfe3ff" stroke-width="3" stroke-linecap="round" opacity=".6"/><g transform="translate(120 26)"><g transform="scale(.7)">${ball('hockey')}</g></g>`);
-// UFC: a punch lands
-const punch = A.svg('-60 -50 120 100', rad('ufGlow', [[0, '#fff6c8', 1], [1, '#ffd23f', 0]]),
-  `<circle r="40" fill="url(#ufGlow)" opacity="0"><animate attributeName="opacity" values="0;1;0" keyTimes="0;.35;1" dur="1.6s" fill="freeze"/></circle>
-   <path d="M0-38l8 22 22-10-12 20 24 6-24 8 12 20-22-10-8 22-8-22-22 10 12-20-24-8 24-6-12-20 22 10z" fill="#ffd23f" stroke="#d20a0a" stroke-width="2.4" transform="scale(0)"><animateTransform attributeName="transform" type="scale" values="0;1.1;1" keyTimes="0;.4;1" dur="1.6s" fill="freeze"/></path>
-   <text x="0" y="7" font-size="20" font-weight="900" text-anchor="middle" fill="#d20a0a" font-family="sans-serif" opacity="0">POW!<animate attributeName="opacity" values="0;1;1" keyTimes="0;.4;1" dur="1.6s" fill="freeze"/></text>
-   <g transform="translate(-58 0)"><g transform="scale(1.2)">${ball('ufc')}</g><animateTransform attributeName="transform" type="translate" values="-110 0;-48 0;-54 0" keyTimes="0;.35;1" dur="1.6s" fill="freeze"/></g>`);
-const confettiBurst = A.svg('-50 -50 100 100', '', Array.from({length: 22}, (_, i) => { const a = i / 22 * Math.PI * 2, x = (40 * Math.cos(a)).toFixed(1), y = (40 * Math.sin(a)).toFixed(1), col = ['#ffd23f', '#e5484d', '#22b8b0', '#8b5cf6', '#ffffff'][i % 5];
-  return `<rect x="-2" y="-4" width="4" height="8" rx="1" fill="${col}" opacity="0"><animate attributeName="opacity" values="0;1;0" dur="2.4s" fill="freeze"/><animateTransform attributeName="transform" type="translate" values="0 0;${x} ${y};${x} ${+y + 20}" dur="2.4s" fill="freeze"/></rect>`; }).join(''));
-const FLY = SEA.FLY;
-const tennisBall = ballFly('tn', ball('hardcourt'), '#d9ec3c', .4);
-Object.assign(FLY, {
-  'sp-f1': [{motion:'ltr', w:56, dur:3.2, y:[30, 70], svg:f1car}],
-  'sp-motogp': [{motion:'ltr', w:40, dur:3.4, y:[30, 70], svg:motoBike}],
-  'sp-hardcourt': [{motion:'ltr', w:34, dur:2.6, y:[20, 70], svg:tennisBall}],
-  'sp-clay': [{motion:'rtl', flip:true, w:34, dur:2.6, y:[20, 70], svg:tennisBall}],
-  'sp-grass': [{motion:'ltr', w:34, dur:2.6, y:[20, 70], svg:tennisBall}],
-  'sp-golf': [{motion:'arc', w:80, dur:3.6, y:[20, 40], svg:golfShot}],
-  'sp-football': [{motion:'arc', w:80, dur:3.2, y:[20, 40], svg:goal}, {motion:'burst', w:36, dur:2.4, count:3, svg:confettiBurst}],
-  'sp-gridiron': [{motion:'ltr', w:36, dur:2.8, y:[10, 60], svg:ballFly('gi', ball('gridiron'), '#ffffff', .5)}, {motion:'burst', w:36, dur:2.4, count:3, svg:confettiBurst}],
-  'sp-afl': [{motion:'ltr', w:36, dur:2.8, y:[10, 60], svg:ballFly('af', ball('afl'), '#ffd23f', .5)}, {motion:'burst', w:36, dur:2.4, count:3, svg:confettiBurst}],
-  'sp-rugby': [{motion:'ltr', w:36, dur:2.8, y:[10, 60], svg:ballFly('rg', ball('rugby'), '#ffffff', .7)}, {motion:'burst', w:36, dur:2.4, count:3, svg:confettiBurst}],
-  'sp-baseball': [{motion:'ltr', w:34, dur:2, y:[10, 60], svg:ballFly('bb', ball('baseball'), '#ffffff', .3)}, {motion:'burst', w:36, dur:2.4, count:3, svg:confettiBurst}],
-  'sp-basketball': [{motion:'arc', w:76, dur:3.2, y:[16, 34], svg:hoopShot}],
-  'sp-hockey': [{motion:'ltr', w:30, dur:2.4, y:[74, 80], svg:puckSlide}],
-  'sp-cricket': [{motion:'ltr', w:34, dur:2.2, y:[20, 70], svg:ballFly('cr', ball('cricket'), '#ffffff', .25)}],
-  'sp-ufc': [{motion:'burst', w:44, dur:1.8, svg:punch}]
-});
+/* ---------- flyovers: the high-detail artwork from sportart.js ---------- */
+const ART = window.GW_SPORT_ART, {rep} = A;
+const confettiBurst = A.svg('-50 -50 100 100', '', Array.from({length: 26}, (_, i) => { const a = i / 26 * Math.PI * 2, x = (42 * Math.cos(a)).toFixed(1), y = (42 * Math.sin(a)).toFixed(1), col = ['#ffd23f', '#e5484d', '#22b8b0', '#8b5cf6', '#ffffff'][i % 5];
+  return `<rect x="-2" y="-4" width="4" height="8" rx="1" fill="${col}" opacity="0"><animate attributeName="opacity" values="0;1;0" dur="2.4s" fill="freeze"/><animateTransform attributeName="transform" type="translate" values="0 0;${x} ${y};${x} ${+y + 22}" dur="2.4s" fill="freeze"/></rect>`; }).join(''));
+void rep;
+if (ART){
+  const fly = (key, tint, spin, y = [16, 66]) => ({motion:'ltr', w:36, dur:2.6, y, svg:ART.ballFly(key, tint, spin)});
+  const burst = {motion:'burst', w:36, dur:2.4, count:3, svg:confettiBurst};
+  Object.assign(SEA.FLY, {
+    'sp-f1': [{motion:'ltr', w:70, dur:2.6, y:[26, 66], svg:ART.f1car}],
+    'sp-motogp': [{motion:'ltr', w:46, dur:2.8, y:[22, 60], svg:ART.motoBike}],
+    'sp-hardcourt': [fly('tennis', '#d9ec3c', .35)],
+    'sp-clay': [Object.assign(fly('tennis', '#d9ec3c', .35), {motion:'rtl', flip:true})],
+    'sp-grass': [fly('tennis', '#d9ec3c', .35)],
+    'sp-golf': [{motion:'arc', w:84, dur:3.4, y:[16, 34], svg:ART.golfShot}],
+    'sp-football': [{motion:'arc', w:84, dur:3, y:[14, 34], svg:ART.goalShot}, burst],
+    'sp-gridiron': [fly('gridiron', '#a8662e', .7), burst],
+    'sp-afl': [fly('sherrin', '#d71920', .7), burst],
+    'sp-rugby': [fly('rugby', '#ffffff', .8), burst],
+    'sp-baseball': [Object.assign(fly('baseball', '#ffffff', .22), {dur:2}), burst],
+    'sp-basketball': [{motion:'arc', w:80, dur:2.8, y:[12, 28], svg:ART.hoopShot}],
+    'sp-hockey': [{motion:'ltr', w:40, dur:2.4, y:[70, 76], svg:ART.puckSlide}],
+    'sp-cricket': [Object.assign(fly('cricket', '#ff5a52', .25), {dur:2.2})],
+    'sp-ufc': [{motion:'burst', w:52, dur:1.9, x:[12, 36], y:[24, 50], svg:ART.punch}]
+  });
+}
 window.GW_SPORT_THEMES = {SPORTS, packForCard, sportPackNow};
 })();

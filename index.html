@@ -649,7 +649,7 @@ button.mv:hover{background:var(--surface)}
 @keyframes fxfall{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(var(--w),55cqi) rotate(160deg)}100%{transform:translate(0,112cqi) rotate(340deg)}}
 @keyframes fxrise{0%{transform:translate(0,0)}50%{transform:translate(var(--w),-55cqi)}100%{transform:translate(0,-112cqi);opacity:0}}
 /* flyovers */
-.fly{position:absolute;width:var(--w);pointer-events:none;animation:var(--d) linear both;opacity:.96}
+.fly{position:absolute;width:var(--w);pointer-events:none;animation:var(--d) linear both;opacity:.96;will-change:transform}
 .fly-in svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 1cqi 1cqi rgba(0,0,0,.25))}
 .fly.flip .fly-in{transform:scaleX(-1)}
 .fly.ltr,.fly.wave{left:calc(-1 * var(--w));top:var(--y);animation-name:flyLtr}
@@ -996,6 +996,7 @@ body.landing-open{overflow:hidden}
 <script src="seasonal.js"></script>
 <script src="flyovers.js"></script>
 <script src="themes.js"></script>
+<script src="sportart.js"></script>
 <script src="sportthemes.js"></script>
 <script src="sounds.js"></script>
 <script src="world-data.js"></script>
