@@ -1,4 +1,4 @@
-/* Elite Chess: "Elite Staunton", an original tournament-style set drawn like real turned pieces:
+/* Elite Chess: "Tournament Wood", an original tournament-style set drawn like real turned pieces:
    boxwood for White, polished ebony for Black, each turning shaded as a cylinder with grain, beads, a carved knight
    and a baize pad underneath. Pieces are drawn on a 100×100 grid; the app adds its premium finish (sheen and rim) on
    top, and colourways recolour it by brightness like any other set. */
@@ -95,5 +95,5 @@ const svgs = {};
 for (const side of ['w', 'b']) for (const k of ['K', 'Q', 'R', 'B', 'N', 'P']) svgs[side + k] = svg(WOOD[side], side, DRAW[k](WOOD[side]));
 const D = window.GW_DATA = window.GW_DATA || {};
 // listed first after the original Classic set
-D.PIECE_SETS = Object.assign({staunton: {name:'Elite Staunton', author:'Elite Chess', license:'original', svg: svgs}}, D.PIECE_SETS || {});
+D.PIECE_SETS = Object.assign({staunton: {name:'Tournament Wood', author:'Elite Chess', license:'original', svg: svgs}}, D.PIECE_SETS || {});
 })();

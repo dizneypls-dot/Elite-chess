@@ -1,6 +1,6 @@
 // Offline cache for the installed (Add to Home Screen) web app. Built by tools/site.py.
-const VERSION = 'gw-673ca361dc';
-const FILES = ['./', 'index.html', 'config.js', 'chess.js', 'data.js', 'pieces.js', 'staunton.js', 'seasonal.js', 'flyovers.js', 'holidayart.js', 'themes.js', 'sportart.js', 'sportthemes.js', 'sounds.js', 'world-data.js', 'repertoire.js', 'puzzles.js', 'puzzles-extra.js', 'openings.js', 'lessons.js', 'core.js', 'play.js', 'world.js', 'customize.js', 'firebase.js', 'sync.js', 'auth.js', 'learn.js', 'online.js', 'social.js', 'sports.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'stockfish.js', 'stockfish.wasm', 'stockfish.wasm.js', 'sf17-lite.js', 'sf17-lite.wasm'];
+const VERSION = 'gw-8ca08e61cd';
+const FILES = ['./', 'index.html', 'config.js', 'chess.js', 'data.js', 'pieces.js', 'staunton.js', 'seasonal.js', 'flyovers.js', 'holidayart.js', 'themes.js', 'sportart.js', 'sportthemes.js', 'sounds.js', 'world-data.js', 'repertoire.js', 'puzzles.js', 'puzzles-extra.js', 'openings.js', 'lessons.js', 'core.js', 'play.js', 'world.js', 'customize.js', 'firebase.js', 'sync.js', 'auth.js', 'learn.js', 'online.js', 'social.js', 'sports.js', 'licences.js', 'legal.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'stockfish.js', 'stockfish.wasm', 'stockfish.wasm.js', 'sf17-lite.js', 'sf17-lite.wasm'];
 self.addEventListener('install', e => e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())));

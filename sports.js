@@ -77,7 +77,8 @@ async function refresh(force = false){
 }
 
 /* ---------- turning feeds into cards ---------- */
-const img = u => typeof u === 'string' && /^https:\/\/a\.espncdn\.com\//.test(u) ? u : '';
+// no team logos or flag images: they belong to the leagues and the data provider, so cards show names only
+const img = () => '';
 const stateOf = st => st === 'in' ? 'in' : st === 'post' ? 'post' : 'pre';
 // show it if it's live, starts soon, or finished in the last day and a half
 function relevant(state, start, lead, end){
@@ -276,7 +277,7 @@ function paint(){
     ${sec('Live now', live)}${sec('Coming up', soon)}${sec('Results', done)}
     ${!S.cards.length && !framed ? `<div class="panel empty-state"><div style="font-size:44px">🏟️</div><h2>${S.busy ? 'Checking what’s on…' : S.err ? 'Can’t reach the scores right now' : 'No top events right now'}</h2><p class="muted">${S.err ? 'Check your internet connection.' : 'Big events appear here while they’re on: Grand Prix weekends, Grand Slams, golf majors, World Cups, the Super Bowl, Grand Finals and more.'}</p></div>` : ''}
     ${S.later.length ? `<h2 class="sp-h">Later</h2><div class="panel sp-later">${S.later.slice(0, 6).map(l => `<div class="row"><span class="sp-ico">${l.icon}</span><span class="grow"><b>${esc(l.title)}</b> <span class="muted small">${esc(l.sport)}</span></span><span class="muted small">${esc(new Date(l.date).toLocaleDateString(undefined, {day:'numeric', month:'short'}))}</span></div>`).join('')}</div>` : ''}
-    <p class="muted small">Scores from ESPN; MotoGP from motogp.com (updates every 15 minutes on race weekends). Times are shown in your time zone.</p>`;
+    <p class="muted small">Scores from ESPN; MotoGP from motogp.com (updates every 15 minutes on race weekends). Times are shown in your time zone. Scores are for information only and may be delayed. Event, team and league names belong to their owners; Elite Chess is not affiliated with, sponsored or endorsed by any league, team, event or organiser.</p>`;
   $('spRefresh').addEventListener('click', () => { refresh(true); paint(); });
 }
 $('scr-sports').innerHTML = '';

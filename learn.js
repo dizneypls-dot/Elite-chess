@@ -790,6 +790,7 @@ function openSettings(){
       <div class="muted small">Progress is saved on this device. Copy a backup code to move it to a new phone or browser.</div>
       <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div>
       ${window.EliteApp && window.EliteApp.info ? (() => { const a = appInfo() || {}; return `<div class="row" style="justify-content:space-between;gap:10px;font-weight:600"><span>App version ${esc(a.app || '')}<small class="muted" style="display:block;font-weight:500">${a.time ? 'Content from ' + new Date(a.time * 1000).toLocaleDateString() + ' · updates itself from elitechess.online' : 'Updates itself from elitechess.online'}</small></span><button class="btn" type="button" id="stUpd">Check for updates</button></div>`; })() : ''}</div>
+    <button class="btn big-row" type="button" id="stLegal"><span class="grow" style="text-align:left">⚖️ Legal, credits and licences</span><span>›</span></button>
     <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span>${GW.canExit() ? '<button class="btn" id="stExit" type="button">Exit app</button>' : ''}<button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => {
     const t = e.target.closest('.theme'), o = e.target.closest('[data-opt]'), lk = e.target.closest('[data-look]');
@@ -798,6 +799,7 @@ function openSettings(){
     if (o){ s[o.dataset.opt] = !s[o.dataset.opt]; o.setAttribute('aria-pressed', String(s[o.dataset.opt])); GW.applySettings(); if (o.dataset.opt === 'sound' && s.sound){ sfx.unlock(); sfx.forMove('move', true); } }
   });
   m.querySelector('#stDone').addEventListener('click', () => GW.closeModal());
+  m.querySelector('#stLegal').addEventListener('click', () => { GW.closeModal(); GW.openLegal(); });
   m.querySelector('#stExit')?.addEventListener('click', () => { GW.closeModal(); GW.confirmExit(); });
   m.querySelector('#stLookBtn').addEventListener('click', () => { GW.closeModal(); GW.show('customize'); });
   m.querySelector('#stUpd')?.addEventListener('click', () => { try { window.EliteApp.checkUpdate(); } catch (_) {} });
@@ -922,9 +924,9 @@ document.querySelector('.rail').addEventListener('click', e => {
   const n = b.dataset.nav;
   if (n === 'settings') return openSettings();
   if (n === 'more'){
-    const items = [['friends', '👥', 'Friends'], ['sports', '🏟️', 'Sport'], ['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
+    const items = [['friends', '👥', 'Friends'], ['sports', '🏟️', 'Sport'], ['cups', '🏆', 'Cups'], ['openings', '📖', 'Openings'], ['analysis', '🔍', 'Analysis'], ['world', '🌍', 'World chess'], ['legends', '🏛️', 'Legends'], ['history', '🕘', 'My games'], ['customize', '🎨', 'Customize'], ['profile', '🏅', 'Profile'], ['settings', '⚙️', 'Settings'], ['legal', '⚖️', 'Legal']].concat(GW.canExit() ? [['exit', '⏻', 'Exit app']] : []);
     const m = GW.modal(`<h2>More</h2><div class="more-grid">${items.map(([k, i, t]) => `<button class="more-item" type="button" data-more="${k}"><span>${i}</span>${t}</button>`).join('')}</div>`);
-    m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else if (x.dataset.more === 'exit') GW.confirmExit(); else GW.show(x.dataset.more); });
+    m.addEventListener('click', ev => { const x = ev.target.closest('[data-more]'); if (!x) return; GW.closeModal(); if (x.dataset.more === 'settings') openSettings(); else if (x.dataset.more === 'legal') GW.openLegal(); else if (x.dataset.more === 'exit') GW.confirmExit(); else GW.show(x.dataset.more); });
     return;
   }
   if (n === 'play'){ const g = GW.currentGame(); return GW.show(g && !g.over ? 'game' : 'setup'); }
