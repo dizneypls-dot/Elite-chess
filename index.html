@@ -905,9 +905,10 @@ body.landing-open{overflow:hidden}
 /* ---------- Customize ---------- */
 .cz{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start}
 .cz-prev{position:sticky;top:20px}
-@media (max-width:900px){.cz{grid-template-columns:1fr}.cz-prev{position:static}}
+@media (max-width:900px){.cz{grid-template-columns:minmax(0,1fr)}.cz-prev{position:static}}
 .compact-row{gap:8px}
 .pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+@media (max-width:560px){.pack-grid{grid-template-columns:1fr 1fr;gap:10px}.pack-grid .pack-txt .muted{display:none}}
 .pack{border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;box-shadow:var(--shadow)}
 .pack.on{box-shadow:0 0 0 3px var(--gold),var(--shadow)}
 .pack-txt{display:flex;flex-direction:column;gap:2px}
@@ -970,6 +971,15 @@ body.landing-open{overflow:hidden}
   .tiles.compact .tile-card p{display:none}
   .fold-t{font-size:18px}.fold>summary{padding:14px 16px}.fold-body{padding:0 14px 14px}
 }
+.fold>summary{flex-wrap:wrap}
+.fold{min-width:0}.fold>summary>.fold-t,.fold>summary>.fold-sub{min-width:0}
+.fold-peek{flex-basis:100%;min-width:0;max-width:100%;display:flex;gap:8px;overflow-x:auto;padding:4px 0 6px;scrollbar-width:thin}
+.fold[open] .fold-peek{display:none}
+.fold-peek .pk{flex:none;width:112px;display:flex;flex-direction:column;gap:4px}
+.fold-peek .pk .mini.strip{border-radius:8px;box-shadow:0 2px 0 var(--line-deep)}
+.fold-peek .pk small{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sw-peek{flex:none;width:46px;height:46px;border-radius:9px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;background:var(--board-bg);box-shadow:0 2px 0 var(--line-deep)}
+.sw-peek i:nth-child(1),.sw-peek i:nth-child(4){background:var(--sq-l)}.sw-peek i:nth-child(2),.sw-peek i:nth-child(3){background:var(--sq-d)}
 /* theme offers */
 .season-card.offer{cursor:default}
 .offer-btns{display:flex;flex-direction:column;gap:6px;flex:none}
