@@ -1040,7 +1040,7 @@ function archiveGame(st){
   list.unshift({t:Date.now(), mode:G.mode, human:G.human, bots:G.bots, tc:G.tc, rated:G.rated, coach:!!G.coach || undefined, moves:G.hist.map(h => uci(h.m)),
     result:st.result, reason:st.reason, winner:st.winner || null, delta:G.outcome && G.outcome.delta, opening: op ? op.name : '',
     online: G.online ? {opp: G.online.opp} : undefined});
-  try { localStorage.setItem('gw-archive', JSON.stringify(list.slice(0, 80))); } catch (_) {}
+  try { localStorage.setItem('gw-archive', JSON.stringify(list.slice(0, 80))); localStorage.setItem('gw-mod', String(Date.now())); } catch (_) {}
 }
 GW.archive = archive;
 // Rebuild a saved game so it can be reviewed again

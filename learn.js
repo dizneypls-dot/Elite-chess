@@ -785,7 +785,8 @@ function openSettings(){
     <div class="muted small">To castle, drag or swipe your king onto a rook (or two squares toward it). Right-click and drag on the board to draw arrows; right-click a square to highlight it. Hold Shift, Ctrl or Alt for other colours.</div>
     <div class="stack"><div class="label">Your progress</div>
       <div class="muted small">Progress is saved on this device. Copy a backup code to move it to a new phone or browser.</div>
-      <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div></div>
+      <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div>
+      ${GW.openSync && GW.P2P && GW.P2P.supported() ? '<button class="btn violet big-row" id="stSync" type="button"><span class="grow" style="text-align:left">🔗 Linked devices: sync the Android app and elitechess.online</span><span>›</span></button>' : ''}</div>
     <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span>${GW.canExit() ? '<button class="btn" id="stExit" type="button">Exit app</button>' : ''}<button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => {
     const t = e.target.closest('.theme'), o = e.target.closest('[data-opt]'), lk = e.target.closest('[data-look]');
@@ -796,6 +797,7 @@ function openSettings(){
   m.querySelector('#stDone').addEventListener('click', () => GW.closeModal());
   m.querySelector('#stExit')?.addEventListener('click', () => { GW.closeModal(); GW.confirmExit(); });
   m.querySelector('#stLookBtn').addEventListener('click', () => { GW.closeModal(); GW.show('customize'); });
+  m.querySelector('#stSync')?.addEventListener('click', () => { GW.closeModal(); GW.openSync(); });
   const KEYS = ['gw-profile', 'gw-settings', 'gw-setup', 'gw-archive', 'gw-fav'];
   m.querySelector('#stBackup').addEventListener('click', () => {
     const data = {};

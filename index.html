@@ -804,6 +804,10 @@ body.landing-open{overflow:hidden}
 .cp-line .mv.cur{background:var(--accent);color:#fff}
 .cp-nav{display:flex;gap:6px}
 .cp-opts{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+.sync-dev{display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:12px;padding:8px 10px}
+.sync-ico{font-size:22px}
+.sync-code{font:800 34px var(--f-mono);letter-spacing:.18em;text-align:center;background:var(--surface-2);border-radius:14px;padding:10px;margin:6px 0}
+.sync-pick{white-space:normal}
 .coach.hot{background:color-mix(in srgb,var(--gold) 18%,var(--surface));animation:pop .25s ease-out}
 
 /* ---------- Customize ---------- */
@@ -912,6 +916,7 @@ body.landing-open{overflow:hidden}
 <script src="auth.js"></script>
 <script src="learn.js"></script>
 <script src="online.js"></script>
+<script src="sync.js"></script>
 
 <script>if('serviceWorker' in navigator && /^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 

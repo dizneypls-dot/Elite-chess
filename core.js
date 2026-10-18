@@ -11,8 +11,10 @@ const PIECE_NAME = {K:'king', Q:'queen', R:'rook', B:'bishop', N:'knight', P:'pa
 const esc = t => String(t).replace(/[&<>"]/g, ch => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'})[ch]);
 const store = {
   get(k, d){ try { const v = localStorage.getItem(k); return v ? Object.assign(d, JSON.parse(v)) : d; } catch (_) { return d; } },
-  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+  // progress that syncs between linked devices records when it last really changed (sync.js keeps the newer copy)
+  set(k, v){ try { const s = JSON.stringify(v); if (localStorage.getItem(k) === s) return; localStorage.setItem(k, s); if (SYNCED.includes(k)) localStorage.setItem('gw-mod', String(Date.now())); } catch (_) {} }
 };
+const SYNCED = ['gw-profile', 'gw-settings', 'gw-archive', 'gw-fav'];
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const rnd = n => Math.floor(Math.random() * n);
 
