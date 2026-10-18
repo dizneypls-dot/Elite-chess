@@ -667,6 +667,7 @@ button.mv:hover{background:var(--surface)}
 
 /* ---------- Front page ---------- */
 body.landing-open{overflow:hidden}
+.landing-open .modal-back{z-index:80}
 .landing{position:fixed;inset:0;z-index:70;overflow-y:auto;background:var(--hero);color:#fff;padding:max(20px,env(safe-area-inset-top)) 16px 28px}
 .landing::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 80% 10%,rgba(255,255,255,.18),transparent 40%),radial-gradient(circle at 10% 90%,rgba(0,0,0,.25),transparent 45%);pointer-events:none}
 .ld-wrap{position:relative;max-width:1080px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:start}
@@ -899,6 +900,7 @@ body.landing-open{overflow:hidden}
   </main>
 </div>
 
+<script src="config.js"></script>
 <script src="chess.js"></script>
 <script src="data.js"></script>
 <script src="pieces.js"></script>
@@ -915,10 +917,11 @@ body.landing-open{overflow:hidden}
 <script src="play.js"></script>
 <script src="world.js"></script>
 <script src="customize.js"></script>
+<script src="firebase.js"></script>
+<script src="sync.js"></script>
 <script src="auth.js"></script>
 <script src="learn.js"></script>
 <script src="online.js"></script>
-<script src="sync.js"></script>
 
 <script>if('serviceWorker' in navigator && /^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 

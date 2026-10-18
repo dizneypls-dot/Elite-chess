@@ -1,10 +1,12 @@
 /* Elite Chess: the front page, sign-in and cloud save.
    - Claude account: inside Claude the page knows who is viewing; progress syncs to the artifact database
      (each player's own private data/users/<id>/save document), so it follows you to any device.
-   - Email: profiles kept on this device (several people can share one phone or tablet), password-protected
-     with PBKDF2. Nothing is sent anywhere.
+   - Elite Chess account (elitechess.online and the Android app, when Firebase is set up in config.js): email and
+     password, or Google on the website; progress syncs to the player's own Firestore document (firebase.js).
+   - Email without Firebase: profiles kept on this device (several people can share one phone or tablet),
+     password-protected with PBKDF2. Nothing is sent anywhere. With Firebase they move into an account on sign-in.
    - Google: shown only where a Google client ID is configured (GW_CONFIG.googleClientId) and the page runs
-     on its own website; Google’s sign-in script cannot load inside Claude.
+     on its own website; Google’s sign-in script cannot load inside Claude or the Android app.
    - Guest: play straight away; you can attach the progress to an account later. */
 (() => {
 const GW = window.GW;
@@ -47,6 +49,7 @@ function switchTo(acct, {keepCurrent = false} = {}){
 }
 function signOut(){
   const was = current();
+  if (was && was.provider === 'firebase' && GW.FB) GW.FB.signOut();
   if (was) stash(was.id);
   restore(null);
   setCurrent(null);
@@ -84,9 +87,59 @@ async function pushCloud(force){
     GW.syncedAt = Date.now();
   } catch (_) { GW.syncError = true; }
 }
-GW.syncNow = () => pushCloud(true);
+/* ---------- Cloud save for Elite Chess accounts (Firebase) ---------- */
+const FB = GW.FB || {enabled:false};
+const fbAcct = u => ({id:'fb:' + u.uid, provider:'firebase', uid:u.uid, email:u.email || '', name:u.name || '', via:u.provider});
+const fbActive = () => { const a = current(), u = FB.enabled && FB.user(); return !!(u && a && a.provider === 'firebase' && a.uid === u.uid); };
+let fbSent = '', fbBusy = null;
+// Two-way sync with the account's copy: changes from another device are merged in (the newer profile wins; games,
+// puzzles and trophies from both are kept), then this device's progress goes up. first: signing in on this device.
+function fbSync(opts = {}){ if (!fbBusy) fbBusy = fbSyncRun(opts).finally(() => { fbBusy = null; }); return fbBusy; }
+async function fbSyncRun({first = false, force = false} = {}){
+  if (!fbActive() || !GW.progress) return;
+  const P = GW.progress, local = P.bundle(), sig = JSON.stringify(local.data);
+  if (!first && !force && sig === fbSent) return;
+  try {
+    const remote = await FB.getSave();
+    const lastT = +(localStorage.getItem('gw-sync-t') || 0);
+    let result = local;
+    if (remote && remote.data && remote.t > lastT){
+      const theirs = {mod: remote.t, data: remote.data};
+      let keep = P.amount(local) === 0 ? 'theirs' : P.amount(theirs) === 0 ? 'mine' : local.mod > remote.t ? 'mine' : 'theirs';
+      if (first && P.amount(local) > 0 && P.amount(theirs) > 0 && JSON.stringify(theirs.data) !== sig) keep = await askKeep(P.summary(theirs), P.summary(local), keep);
+      result = keep === 'mine' ? P.merge(local, theirs) : P.merge(theirs, local);
+      P.apply(result);
+    }
+    // the cloud copy is stamped with when its progress last changed (not when it was uploaded), so the newer play wins
+    let t = remote ? remote.t : 0;
+    if (!remote || JSON.stringify(result.data) !== JSON.stringify(remote.data)){
+      t = Math.max(result.mod || 0, remote ? remote.t + 1 : 0) || Date.now();
+      await FB.putSave(result.data, t);
+      try { localStorage.setItem('gw-mod', String(t)); } catch (_) {}
+    }
+    try { localStorage.setItem('gw-sync-t', String(t)); } catch (_) {}
+    fbSent = JSON.stringify(P.bundle().data);
+    GW.syncedAt = Date.now(); GW.syncError = false;
+  } catch (e){ GW.syncError = e.message || true; }
+}
+// Signing in on a device that already has progress: which profile should the account use?
+function askKeep(theirs, mine, fallback){
+  return new Promise(resolve => {
+    const card = (x, title, v) => `<button class="btn big-row" type="button" data-keep="${v}" style="white-space:normal"><span class="grow" style="text-align:left"><b>${esc(title)}</b><br><span class="muted small">${esc(x.name)} · rating ${x.rating} · ${x.games} games · ${x.puzzles} puzzles</span></span></button>`;
+    const m = GW.modal(`<h2>Progress found in your account</h2><div class="sub">This device has progress too. Whose profile and rating should your account use? Games, puzzles, achievements and trophies from both are kept.</div>
+      <div class="stack">${card(theirs, 'Your account', 'theirs')}${card(mine, 'This device', 'mine')}</div>`, {onClose: () => resolve(fallback)});
+    m.querySelectorAll('[data-keep]').forEach(b => b.addEventListener('click', () => { resolve(b.dataset.keep); GW.closeModal(); }));
+  });
+}
+GW.syncNow = () => fbActive() ? fbSync({force:true}) : pushCloud(true);
 setInterval(() => pushCloud(false), 25000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pushCloud(false); });
+// Elite Chess accounts save every 2 minutes while something changed (and when the app is closed or hidden), which
+// keeps a busy day well inside Firebase's free 20,000 writes
+setInterval(() => fbSync(), 120000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden'){ pushCloud(false); fbSync(); }
+  else fbSync({force:true});   // back in the app: pick up anything played on another device
+});
 
 // After signing in with Claude: bring down the cloud copy when it is newer than this device’s
 async function pullCloud(cloud, {ask}){
@@ -120,6 +173,8 @@ const FEATURES = [
   ['🎨', 'Make it yours', 'Dozens of boards and piece sets, seasonal and holiday themes, real sounds.']
 ];
 let demo = null;
+// Google's sign-in button needs a real website (not Claude, not the Android app's local page)
+const googleOK = () => !!CONFIG.googleClientId && !framed && !window.EliteApp && /^https?:$/.test(location.protocol);
 function landing({onDone} = {}){
   document.getElementById('landing')?.remove();
   const el = document.createElement('div');
@@ -142,18 +197,19 @@ function landing({onDone} = {}){
       <div class="stack" id="ldButtons">
         <div id="ldClaude"></div>
         <button class="btn big-row ld-btn" type="button" id="ldEmail"><span class="ld-ico">✉️</span><span class="grow">Continue with email</span></button>
-        ${CONFIG.googleClientId && !framed ? '<div id="ldGoogle" class="ld-google"></div>' : ''}
+        ${googleOK() ? '<div id="ldGoogle" class="ld-google"></div>' : ''}
         <button class="btn ghost" type="button" id="ldGuest">Play as a guest</button>
       </div>
       <form class="stack" id="ldForm" hidden autocomplete="on">
-        <div class="tabs small" id="ldMode"><button type="button" data-m="in" aria-pressed="true">Sign in</button><button type="button" data-m="up" aria-pressed="false">Create profile</button></div>
+        <div class="tabs small" id="ldMode"><button type="button" data-m="in" aria-pressed="true">Sign in</button><button type="button" data-m="up" aria-pressed="false">${FB.enabled ? 'Create account' : 'Create profile'}</button></div>
         <input class="search" id="ldName" maxlength="20" placeholder="Your name" autocomplete="nickname" hidden>
         <input class="search" id="ldMail" type="email" placeholder="Email" autocomplete="email" required>
         <input class="search" id="ldPass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password" minlength="6" required>
         <div class="feedback bad" id="ldErr" hidden></div>
         <button class="btn pop big" type="submit" id="ldGo">Sign in</button>
+        ${FB.enabled ? '<button class="btn ghost" type="button" id="ldForgot">Forgot your password?</button>' : ''}
         <button class="btn ghost" type="button" id="ldBack">← Other options</button>
-        <p class="muted small">Email profiles are saved on this device only, so several people can share one phone or tablet. To sync across devices, sign in with your Claude account.</p>
+        <p class="muted small">${FB.enabled ? 'Your Elite Chess account works on elitechess.online and in the Android app. Your progress is saved to your account, so it is safe if you change phones.' : 'Email profiles are saved on this device only, so several people can share one phone or tablet. To sync across devices, sign in with your Claude account.'}</p>
       </form>
       ${accts.length ? `<div class="ld-accts"><div class="label">On this device</div><div class="row">${accts.map(a => `<button class="chip-btn" type="button" data-acct="${esc(a.id)}">${esc(a.name || a.email)}</button>`).join('')}</div></div>` : ''}
     </section>
@@ -191,19 +247,21 @@ function landing({onDone} = {}){
     mode = m;
     el.querySelectorAll('#ldMode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
     el.querySelector('#ldName').hidden = m !== 'up';
-    el.querySelector('#ldGo').textContent = m === 'up' ? 'Create profile' : 'Sign in';
+    el.querySelector('#ldGo').textContent = m === 'up' ? (FB.enabled ? 'Create account' : 'Create profile') : 'Sign in';
+    const fg = el.querySelector('#ldForgot'); if (fg) fg.hidden = m === 'up';
     el.querySelector('#ldPass').autocomplete = m === 'up' ? 'new-password' : 'current-password';
     err.hidden = true;
   };
-  el.querySelector('#ldEmail').addEventListener('click', () => { buttons.hidden = true; form.hidden = false; setMode(acctStore().list.length ? 'in' : 'up'); el.querySelector(mode === 'up' ? '#ldName' : '#ldMail').focus(); });
+  el.querySelector('#ldEmail').addEventListener('click', () => { buttons.hidden = true; form.hidden = false; setMode(acctStore().list.length || FB.enabled ? 'in' : 'up'); el.querySelector(mode === 'up' ? '#ldName' : '#ldMail').focus(); });
   el.querySelector('#ldBack').addEventListener('click', () => { form.hidden = true; buttons.hidden = false; });
   el.querySelector('#ldMode').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (b) setMode(b.dataset.m); });
-  const fail = msg => { err.hidden = false; err.innerHTML = `<span class="ic">!</span><div>${esc(msg)}</div>`; };
+  const fail = msg => { err.hidden = false; err.className = 'feedback bad'; err.innerHTML = `<span class="ic">!</span><div>${esc(msg)}</div>`; };
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const email = el.querySelector('#ldMail').value.trim().toLowerCase(), pass = el.querySelector('#ldPass').value, name = el.querySelector('#ldName').value.trim().slice(0, 20);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Please enter a valid email address.');
     if (pass.length < 6) return fail('Passwords need at least 6 characters.');
+    if (FB.enabled) return fbSubmit(email, pass, name);
     if (!(window.crypto && crypto.subtle)) return fail('This browser can’t protect passwords here. Try playing as a guest.');
     const A = acctStore();
     let a = A.list.find(x => x.email === email);
@@ -229,6 +287,43 @@ function landing({onDone} = {}){
     }
     switchTo(pub);
   });
+  // Elite Chess accounts (Firebase)
+  async function fbSubmit(email, pass, name){
+    const go = el.querySelector('#ldGo');
+    go.disabled = true;
+    try {
+      let u, moved = false;
+      if (mode === 'up') u = await FB.signUp(email, pass, name);
+      else {
+        try { u = await FB.signIn(email, pass); }
+        catch (e){
+          // a profile made on this device before accounts existed moves into a new account with the same details
+          const A = acctStore(), old = A.list.find(x => x.email === email && x.provider === 'email');
+          if (!old || !['INVALID_LOGIN_CREDENTIALS', 'EMAIL_NOT_FOUND', 'INVALID_PASSWORD'].includes(e.code) || await hashPass(pass, old.salt) !== old.hash) throw e;
+          u = await FB.signUp(email, pass, old.name);
+          const saved = unstash(old.id);
+          if (saved && current() === null) restore(saved);
+          A.list = A.list.filter(x => x !== old); saveAccts(A);
+          moved = true;
+        }
+      }
+      if (mode === 'up' && name){ GW.profile.name = name; GW.saveProfile(); }
+      setCurrent(fbAcct(u));
+      if (moved){ location.reload(); return; }
+      // bring the account's progress down before the app opens (so a returning player isn't welcomed as new)
+      go.textContent = 'Loading your progress…';
+      await fbSync({first:true});
+      finish();
+      GW.toast(mode === 'up' ? `<b>Account created</b><br>Welcome${name ? ', ' + esc(name) : ''}! Your progress is saved to your account.` : '<b>Signed in</b><br>Your progress is saved to your account.');
+    } catch (e){ fail(e.message); }
+    finally { go.disabled = false; }
+  }
+  el.querySelector('#ldForgot')?.addEventListener('click', async () => {
+    const email = el.querySelector('#ldMail').value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Type your email above first, then tap “Forgot your password?”.');
+    try { await FB.resetPassword(email); err.hidden = false; err.className = 'feedback ok'; err.innerHTML = `<div>If there is an account for ${esc(email)}, an email to reset the password is on its way.</div>`; }
+    catch (e){ fail(e.code === 'EMAIL_NOT_FOUND' ? `If there is an account for ${email}, an email to reset the password is on its way.` : e.message); }
+  });
   el.querySelectorAll('[data-acct]').forEach(b => b.addEventListener('click', () => {
     const a = acctStore().list.find(x => x.id === b.dataset.acct);
     if (!a) return;
@@ -236,7 +331,19 @@ function landing({onDone} = {}){
     el.querySelector('#ldMail').value = a.email; el.querySelector('#ldPass').focus();
   }));
   // Google (only where configured and not inside Claude)
-  if (CONFIG.googleClientId && !framed) loadGoogle(el.querySelector('#ldGoogle'), cred => {
+  if (googleOK()) loadGoogle(el.querySelector('#ldGoogle'), async (cred, raw) => {
+    if (FB.enabled){
+      try {
+        const u = await FB.signInGoogle(raw);
+        u.name = cred.given_name || cred.name || '';
+        if (!GW.profile.name && u.name){ GW.profile.name = u.name.slice(0, 20); GW.saveProfile(); }
+        setCurrent(fbAcct(u));
+        await fbSync({first:true});
+        finish();
+        GW.toast('<b>Signed in with Google</b><br>Your progress is saved to your account.');
+      } catch (e){ buttons.hidden = false; GW.toast(esc(e.message)); }
+      return;
+    }
     const acct = {id:'google:' + cred.sub, provider:'google', email: cred.email || '', name: cred.given_name || cred.name || ''};
     if (!GW.profile.name && acct.name){ GW.profile.name = acct.name.slice(0, 20); GW.saveProfile(); }
     if (!current()){ setCurrent(acct); finish(); return; }
@@ -253,7 +360,7 @@ function loadGoogle(host, onCred){
   s.onload = () => {
     try {
       google.accounts.id.initialize({client_id: CONFIG.googleClientId, callback: r => {
-        try { const p = JSON.parse(decodeURIComponent(escape(atob(r.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))))); onCred(p); } catch (_) {}
+        try { const p = JSON.parse(decodeURIComponent(escape(atob(r.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))))); onCred(p, r.credential); } catch (_) {}
       }});
       google.accounts.id.renderButton(host, {theme:'outline', size:'large', width: 320, text:'continue_with'});
     } catch (_) { host.remove(); }
@@ -279,22 +386,37 @@ GW.needsLanding = () => !current();
 GW.accountCard = () => {
   const a = current();
   if (!a) return '';
-  const how = {claude:'Claude account · synced', email:'Email profile on this device', google:'Google account on this device', guest:'Guest on this device'}[a.provider] || '';
-  const sync = a.provider === 'claude' ? (GW.syncedAt ? `Last synced ${new Date(GW.syncedAt).toLocaleTimeString()}` : 'Syncs every few seconds while you play') : a.provider === 'guest' ? 'Sign in to keep your progress safe.' : 'Use a backup code (Settings) to move it to another device.';
+  const how = {claude:'Claude account · synced', firebase:'Elite Chess account · synced', email:'Email profile on this device', google:'Google account on this device', guest:'Guest on this device'}[a.provider] || '';
+  const sync = a.provider === 'firebase' ? (GW.syncError ? 'Couldn’t sync just now. It will try again.' : GW.syncedAt ? `Last synced ${new Date(GW.syncedAt).toLocaleTimeString()}` : 'Saves to your account while you play') : a.provider === 'claude' ? (GW.syncedAt ? `Last synced ${new Date(GW.syncedAt).toLocaleTimeString()}` : 'Syncs every few seconds while you play') : a.provider === 'guest' ? 'Sign in to keep your progress safe.' : 'Use a backup code (Settings) to move it to another device.';
   return `<div class="panel acct"><div class="row"><div class="grow"><div class="label">Account</div><b>${esc(a.name || a.email || (a.provider === 'guest' ? 'Guest' : 'Player'))}</b><div class="muted small">${esc(how)}${a.email ? ' · ' + esc(a.email) : ''}</div><div class="muted small">${esc(sync)}</div></div>
-    ${a.provider === 'claude' ? '<button class="btn" type="button" id="acSync">Sync now</button>' : ''}${a.provider === 'guest' ? '<button class="btn pop" type="button" id="acSignIn">Sign in</button>' : '<button class="btn ghost" type="button" id="acOut">Sign out</button>'}</div></div>`;
+    ${a.provider === 'claude' || a.provider === 'firebase' ? '<button class="btn" type="button" id="acSync">Sync now</button>' : ''}${a.provider === 'guest' ? '<button class="btn pop" type="button" id="acSignIn">Sign in</button>' : '<button class="btn ghost" type="button" id="acOut">Sign out</button>'}</div>
+    ${a.provider === 'firebase' ? '<button class="btn ghost" type="button" id="acDelete" style="margin-top:8px;color:var(--alarm)">Delete my account</button>' : ''}</div>`;
 };
 document.addEventListener('click', e => {
-  const t = e.target.closest('#acSync,#acSignIn,#acOut');
+  const t = e.target.closest('#acSync,#acSignIn,#acOut,#acDelete');
   if (!t) return;
-  if (t.id === 'acSync') GW.syncNow().then(() => GW.toast('Synced'));
+  if (t.id === 'acSync') GW.syncNow().then(() => GW.toast(GW.syncError ? esc(String(GW.syncError === true ? 'Couldn’t sync just now.' : GW.syncError)) : 'Synced'));
+  if (t.id === 'acDelete'){
+    const m = GW.modal(`<h2>Delete your account?</h2><div class="sub">Your Elite Chess account and the progress saved in it are deleted for good. This can’t be undone.</div><div class="feedback bad" id="delErr" hidden></div><div class="row"><button class="btn grow" id="delNo" type="button">Cancel</button><button class="btn danger grow" id="delYes" type="button">Delete account</button></div>`);
+    m.querySelector('#delNo').addEventListener('click', () => GW.closeModal());
+    m.querySelector('#delYes').addEventListener('click', async ev => {
+      ev.target.disabled = true;
+      try { await FB.deleteAccount(); }
+      catch (er){ const d = m.querySelector('#delErr'); d.hidden = false; d.textContent = er.message; ev.target.disabled = false; return; }
+      const was = current();
+      try { if (was) localStorage.removeItem('gw-stash:' + was.id); localStorage.removeItem('gw-sync-t'); } catch (_) {}
+      restore(null); setCurrent(null); location.reload();
+    });
+  }
   if (t.id === 'acSignIn'){ setCurrent(null); landing(); }
   if (t.id === 'acOut'){
-    const m = GW.modal(`<h2>Sign out?</h2><div class="sub">Your progress stays saved with your account${current()?.provider === 'claude' ? ' in the cloud' : ' on this device'}.</div><div class="row"><button class="btn grow" id="soNo" type="button">Cancel</button><button class="btn pop grow" id="soYes" type="button">Sign out</button></div>`);
+    const m = GW.modal(`<h2>Sign out?</h2><div class="sub">Your progress stays saved with your account${['claude', 'firebase'].includes(current()?.provider) ? ' in the cloud' : ' on this device'}.</div><div class="row"><button class="btn grow" id="soNo" type="button">Cancel</button><button class="btn pop grow" id="soYes" type="button">Sign out</button></div>`);
     m.querySelector('#soNo').addEventListener('click', () => GW.closeModal());
-    m.querySelector('#soYes').addEventListener('click', async () => { await pushCloud(true); signOut(); });
+    m.querySelector('#soYes').addEventListener('click', async () => { await pushCloud(true); await fbSync({force:true}); signOut(); });
   }
 });
+// Elite Chess account: sync when the app opens
+setTimeout(() => fbSync({force:true}), 0);
 // Keep a Claude account's cloud copy fresh when the app opens
 GW.cloudReady.then(cloud => { const a = current(); if (cloud && cloud.me && a && a.provider === 'claude') pullCloud(cloud, {ask: true}).then(p => { if (!p) pushCloud(false); }); });
 })();

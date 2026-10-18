@@ -786,8 +786,7 @@ function openSettings(){
     <div class="stack"><div class="label">Your progress</div>
       <div class="muted small">Progress is saved on this device. Copy a backup code to move it to a new phone or browser.</div>
       <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div>
-      ${window.EliteApp && window.EliteApp.info ? (() => { const a = appInfo() || {}; return `<div class="row" style="justify-content:space-between;gap:10px;font-weight:600"><span>App version ${esc(a.app || '')}<small class="muted" style="display:block;font-weight:500">${a.time ? 'Content from ' + new Date(a.time * 1000).toLocaleDateString() + ' · updates itself from elitechess.online' : 'Updates itself from elitechess.online'}</small></span><button class="btn" type="button" id="stUpd">Check for updates</button></div>`; })() : ''}
-      ${GW.openSync && GW.P2P && GW.P2P.supported() ? '<button class="btn violet big-row" id="stSync" type="button"><span class="grow" style="text-align:left">🔗 Linked devices: sync the Android app and elitechess.online</span><span>›</span></button>' : ''}</div>
+      ${window.EliteApp && window.EliteApp.info ? (() => { const a = appInfo() || {}; return `<div class="row" style="justify-content:space-between;gap:10px;font-weight:600"><span>App version ${esc(a.app || '')}<small class="muted" style="display:block;font-weight:500">${a.time ? 'Content from ' + new Date(a.time * 1000).toLocaleDateString() + ' · updates itself from elitechess.online' : 'Updates itself from elitechess.online'}</small></span><button class="btn" type="button" id="stUpd">Check for updates</button></div>`; })() : ''}</div>
     <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span>${GW.canExit() ? '<button class="btn" id="stExit" type="button">Exit app</button>' : ''}<button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => {
     const t = e.target.closest('.theme'), o = e.target.closest('[data-opt]'), lk = e.target.closest('[data-look]');
@@ -798,7 +797,6 @@ function openSettings(){
   m.querySelector('#stDone').addEventListener('click', () => GW.closeModal());
   m.querySelector('#stExit')?.addEventListener('click', () => { GW.closeModal(); GW.confirmExit(); });
   m.querySelector('#stLookBtn').addEventListener('click', () => { GW.closeModal(); GW.show('customize'); });
-  m.querySelector('#stSync')?.addEventListener('click', () => { GW.closeModal(); GW.openSync(); });
   m.querySelector('#stUpd')?.addEventListener('click', () => { try { window.EliteApp.checkUpdate(); } catch (_) {} });
   const KEYS = ['gw-profile', 'gw-settings', 'gw-setup', 'gw-archive', 'gw-fav'];
   m.querySelector('#stBackup').addEventListener('click', () => {
@@ -830,6 +828,7 @@ function openSettings(){
 
 /* ============================== ONBOARDING ============================== */
 function onboarding(){
+  if (profile.onboarded) return;   // e.g. a returning player whose account just loaded
   const levels = [['New to chess', 400], ['Beginner', 800], ['Intermediate', 1200], ['Advanced', 1600], ['Expert', 2000]];
   let lvl = 1;
   const looks = [D.PEOPLE.you.look, D.BOTS[2].look, D.BOTS[6].look, D.BOTS[10].look, D.BOTS[4].look, D.BOTS[13].look];

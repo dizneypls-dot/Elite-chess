@@ -570,9 +570,6 @@ function joinCode(raw){
   start('joining', `Joining game ${code}…`, (token, inRoom) => inRoom ? roomJoinCode(code, token) : p2pJoinCode(code, token));
 }
 
-// the same direct connections carry progress between linked devices (sync.js)
-GW.P2P = {Peer, PREFIX, CODE_CHARS, randStr, dial, expect, supported: () => !framed && p2pSupported()};
-
 for (const ev of ['pagehide', 'beforeunload']) addEventListener(ev, () => { if (S.conn) S.conn.send({t:'bye'}); });
 
 GW.Online = {
