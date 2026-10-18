@@ -727,6 +727,7 @@ button.mv:hover{background:var(--surface)}
 
 /* ---------- Front page ---------- */
 body.landing-open{overflow:hidden}
+.landing-open .modal-back{z-index:80}
 .landing{position:fixed;inset:0;z-index:70;overflow-y:auto;background:var(--hero);color:#fff;padding:max(20px,env(safe-area-inset-top)) 16px 28px}
 .landing::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 80% 10%,rgba(255,255,255,.18),transparent 40%),radial-gradient(circle at 10% 90%,rgba(0,0,0,.25),transparent 45%);pointer-events:none}
 .ld-wrap{position:relative;max-width:1080px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:start}
@@ -959,6 +960,17 @@ body.landing-open{overflow:hidden}
   </main>
 </div>
 
+<script>/* config.js */
+/* Elite Chess settings for the stand-alone app (elitechess.online and the Android app).
+   firebase: the Firebase project for player accounts (Firebase console → Project settings → Your apps → Web app).
+   googleClientId: the OAuth client ID for "Continue with Google" (Firebase console → Authentication → Google).
+   These values are meant to be public: the database rules (firestore.rules) are what keep each player's data private. */
+window.GW_CONFIG = Object.assign({
+  firebase: {apiKey: '', projectId: ''},
+  googleClientId: ''
+}, window.GW_CONFIG || {});
+
+</script>
 <script>/* chess.js */
 /* Elite Chess: rules, notation, a small built-in search, a mate solver and a Stockfish wrapper.
    Squares are 0..63 with 0 = a8 and 63 = h1. Pieces are strings like 'wK' or 'bP'. */
@@ -13044,14 +13056,194 @@ GW.register('customize', {onShow: arg => { if (arg && arg.tab) tab = arg.tab; dr
 })();
 
 </script>
+<script>/* firebase.js */
+/* Elite Chess: player accounts with Firebase (Authentication + Cloud Firestore), for elitechess.online and the
+   Android app. Talks to Firebase's REST API directly (no SDK), so it works the same from the website and from the
+   app's local page. Each player's progress is one document, users/<uid>, that only they can read and write
+   (see firestore.rules). Turned on by window.GW_CONFIG.firebase = {apiKey, projectId} in config.js. */
+(() => {
+const GW = window.GW;
+const CFG = (window.GW_CONFIG || {}).firebase || {};
+const framed = !!(window.claude && typeof window.claude.use === 'function');
+const enabled = !!(CFG.apiKey && CFG.projectId) && !framed;
+// the local emulators replace these during testing
+const AUTH = CFG.authUrl || 'https://identitytoolkit.googleapis.com';
+const TOKEN = CFG.tokenUrl || 'https://securetoken.googleapis.com';
+const DB = CFG.firestoreUrl || 'https://firestore.googleapis.com';
+
+/* ---------- The signed-in user (kept on this device) ---------- */
+const KEY = 'gw-fb';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (_) { return null; } };
+const save = u => { try { u ? localStorage.setItem(KEY, JSON.stringify(u)) : localStorage.removeItem(KEY); } catch (_) {} };
+let user = load();
+
+// Firebase error codes in plain words
+const WORDS = {
+  EMAIL_EXISTS: 'There is already an account with that email. Sign in instead.',
+  EMAIL_NOT_FOUND: 'No account with that email. Create one instead.',
+  INVALID_PASSWORD: 'That password doesn’t match.',
+  INVALID_LOGIN_CREDENTIALS: 'The email or password is wrong.',
+  INVALID_EMAIL: 'Please enter a valid email address.',
+  WEAK_PASSWORD: 'Passwords need at least 6 characters.',
+  MISSING_PASSWORD: 'Please enter your password.',
+  USER_DISABLED: 'This account has been switched off.',
+  TOO_MANY_ATTEMPTS_TRY_LATER: 'Too many tries. Please wait a few minutes and try again.',
+  OPERATION_NOT_ALLOWED: 'Sign-in with this method isn’t switched on yet.',
+  TOKEN_EXPIRED: 'Please sign in again.', USER_NOT_FOUND: 'Please sign in again.', INVALID_ID_TOKEN: 'Please sign in again.',
+  CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'For safety, sign out and sign in again first.'
+};
+class FBError extends Error {
+  constructor(code, msg){ super(msg || WORDS[code] || 'Something went wrong. Please try again.'); this.code = code; }
+}
+async function call(base, path, body, {form = false, token = null, method = 'POST'} = {}){
+  let r;
+  try {
+    r = await fetch(`${base}${path}${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(CFG.apiKey)}`, {
+      method,
+      headers: Object.assign({'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json'}, token ? {Authorization: 'Bearer ' + token} : {}),
+      body: body == null ? undefined : form ? new URLSearchParams(body).toString() : JSON.stringify(body)
+    });
+  } catch (_) { throw new FBError('NETWORK', 'Can’t reach the server. Check your internet connection.'); }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok){
+    // sign-in errors carry a code in the message ("WEAK_PASSWORD : …"); database errors carry a status (NOT_FOUND)
+    const e = data.error || {};
+    throw new FBError(base === DB ? e.status || String(r.status) : String(e.message || r.status).split(/[ :]/)[0]);
+  }
+  return data;
+}
+function signedIn(d, extra = {}){
+  user = Object.assign({}, user && user.uid === d.localId ? user : {}, {
+    uid: d.localId, email: d.email || '', idToken: d.idToken, refreshToken: d.refreshToken,
+    exp: Date.now() + (+d.expiresIn || 3600) * 1000, provider: extra.provider || 'password', name: extra.name || d.displayName || ''
+  });
+  save(user);
+  return user;
+}
+// A fresh token (they last an hour)
+async function token(){
+  if (!user) throw new FBError('TOKEN_EXPIRED');
+  if (Date.now() < user.exp - 60000) return user.idToken;
+  const d = await call(TOKEN, '/v1/token', {grant_type:'refresh_token', refresh_token:user.refreshToken}, {form:true});
+  Object.assign(user, {idToken:d.id_token, refreshToken:d.refresh_token, exp: Date.now() + (+d.expires_in || 3600) * 1000});
+  save(user);
+  return user.idToken;
+}
+
+/* ---------- Accounts ---------- */
+const signUp = async (email, password, name) => signedIn(await call(AUTH, '/v1/accounts:signUp', {email, password, returnSecureToken:true}), {name});
+const signIn = async (email, password) => signedIn(await call(AUTH, '/v1/accounts:signInWithPassword', {email, password, returnSecureToken:true}));
+// Google: the Google sign-in button gives an ID token, which Firebase turns into the player's account
+const signInGoogle = async idToken => signedIn(await call(AUTH, '/v1/accounts:signInWithIdp',
+  {postBody:`id_token=${encodeURIComponent(idToken)}&providerId=google.com`, requestUri: location.protocol.startsWith('http') ? location.origin : 'http://localhost', returnSecureToken:true, returnIdpCredential:true}), {provider:'google'});
+const resetPassword = email => call(AUTH, '/v1/accounts:sendOobCode', {requestType:'PASSWORD_RESET', email});
+function signOut(){ user = null; save(null); }
+
+/* ---------- The player's saved progress: users/<uid> = {v, t, name, data (JSON text)} ---------- */
+const docUrl = () => `/v1/projects/${encodeURIComponent(CFG.projectId)}/databases/(default)/documents/users/${encodeURIComponent(user.uid)}`;
+async function getSave(){
+  const tk = await token();
+  try {
+    const d = await call(DB, docUrl(), null, {token:tk, method:'GET'});
+    const f = d.fields || {};
+    return {t: +((f.t || {}).integerValue || 0), data: JSON.parse((f.data || {}).stringValue || '{}')};
+  } catch (e){ if (e.code === 'NOT_FOUND') return null; throw e; }
+}
+async function putSave(data, t){
+  const tk = await token();
+  await call(DB, docUrl(), {fields:{v:{integerValue:'1'}, t:{integerValue:String(t)}, name:{stringValue:String((GW.profile && GW.profile.name) || '').slice(0, 20)}, data:{stringValue:JSON.stringify(data)}}}, {token:tk, method:'PATCH'});
+}
+// Removes the saved progress and the account itself
+async function deleteAccount(){
+  const tk = await token();
+  try { await call(DB, docUrl(), null, {token:tk, method:'DELETE'}); } catch (_) {}
+  await call(AUTH, '/v1/accounts:delete', {idToken:tk});
+  signOut();
+}
+
+GW.FB = {enabled, user: () => user, signUp, signIn, signInGoogle, resetPassword, signOut, getSave, putSave, deleteAccount, FBError};
+})();
+
+</script>
+<script>/* sync.js */
+/* Elite Chess: a player's progress as one bundle, and merging two copies of it (from the cloud and this device).
+   The newer profile wins; games, solved puzzles, achievements and trophies from both are kept. Used by the account
+   sync (auth.js) so that playing on two devices never throws work away. */
+(() => {
+const GW = window.GW;
+const KEYS = ['gw-profile', 'gw-settings', 'gw-archive', 'gw-fav'];
+const MEDAL = {gold:3, silver:2, bronze:1};
+const mod = () => +(localStorage.getItem('gw-mod') || 0);
+
+/* ---------- Progress as a bundle, merged from two devices ---------- */
+function bundle(){
+  const d = {};
+  for (const k of KEYS){ try { const v = localStorage.getItem(k); if (v) d[k] = JSON.parse(v); } catch (_) {} }
+  return {mod: mod(), data: d};
+}
+const summary = b => { const p = (b.data && b.data['gw-profile']) || {}; return {name: p.name || 'Player', rating: p.rating || 800, games: p.games || 0, puzzles: (p.solved || []).length, mod: b.mod}; };
+// The winner's profile and settings, plus everything collected on either device
+function merge(win, lose){
+  const w = win.data || {}, l = lose.data || {}, out = {};
+  const wp = w['gw-profile'], lp = l['gw-profile'];
+  if (wp || lp){
+    const p = Object.assign({}, lp || {}, wp || {});
+    if (wp && lp){
+      // sorted, so both devices end up with exactly the same copy (no saving back and forth)
+      for (const k of ['solved', 'achievements']) p[k] = [...new Set([...(lp[k] || []), ...(wp[k] || [])])].sort();
+      p.lessons = Object.assign({}, lp.lessons || {}, wp.lessons || {});
+      p.trophies = Object.assign({}, lp.trophies || {}, wp.trophies || {});
+      for (const [c, m] of Object.entries(lp.trophies || {})) if ((MEDAL[m] || 0) > (MEDAL[p.trophies[c]] || 0)) p.trophies[c] = m;
+      for (const k of ['best', 'rushBest', 'bestStreak']) p[k] = Math.max(+wp[k] || 0, +lp[k] || 0);
+    }
+    out['gw-profile'] = p;
+  }
+  if (w['gw-settings'] || l['gw-settings']) out['gw-settings'] = w['gw-settings'] || l['gw-settings'];
+  const games = new Map();
+  for (const g of [...(l['gw-archive'] || []), ...(w['gw-archive'] || [])]) if (g && g.moves) games.set(g.t + ':' + g.moves.join(''), g);
+  if (games.size) out['gw-archive'] = [...games.values()].sort((a, b) => b.t - a.t).slice(0, 80);
+  const fav = [...new Set([...((l['gw-fav'] || {}).ids || []), ...((w['gw-fav'] || {}).ids || [])])].sort();
+  if (fav.length) out['gw-fav'] = {ids: fav};
+  return {mod: Math.max(win.mod || 0, lose.mod || 0), data: out};
+}
+// The avatar is drawn into SVG, so only plain colours, words, numbers and flags are accepted from another device
+function cleanProfile(p){
+  if (!p || typeof p !== 'object') return p;
+  const look = {};
+  for (const [k, v] of Object.entries(p.look || {})){
+    if (!/^[a-z]{1,12}$/i.test(k)) continue;
+    if (typeof v === 'boolean' || (typeof v === 'number' && isFinite(v)) || (typeof v === 'string' && /^#?[a-z0-9-]{1,20}$/i.test(v))) look[k] = v;
+  }
+  return Object.assign({}, p, {look, country: /^[A-Z]{2}$/.test(p.country || '') ? p.country : '', name: String(p.name || '').slice(0, 20)});
+}
+// Put a merged bundle on this device, updating the running app without a reload
+function apply(b){
+  if (b.data['gw-profile']) b.data['gw-profile'] = cleanProfile(b.data['gw-profile']);
+  const cur = bundle();
+  if (JSON.stringify(cur.data) === JSON.stringify(b.data)){ localStorage.setItem('gw-mod', String(b.mod)); return false; }
+  for (const k of KEYS){ try { if (b.data[k]) localStorage.setItem(k, JSON.stringify(b.data[k])); } catch (_) {} }
+  if (b.data['gw-profile']){ for (const k of Object.keys(GW.profile)) delete GW.profile[k]; Object.assign(GW.profile, b.data['gw-profile']); }
+  if (b.data['gw-settings']){ Object.assign(GW.settings, b.data['gw-settings']); GW.applySettings(); }
+  try { localStorage.setItem('gw-mod', String(b.mod)); } catch (_) {}
+  if (GW.renderRailMe) GW.renderRailMe();
+  if (['home', 'profile', 'history'].includes(GW.currentScreen())) GW.show(GW.currentScreen());
+  return true;
+}
+const amount = b => { const p = (b && b.data && b.data['gw-profile']) || {}; return (p.games || 0) + (p.solved || []).length + Math.round((p.xp || 0) / 10); };
+GW.progress = {bundle, merge, apply, amount, summary};
+})();
+
+</script>
 <script>/* auth.js */
 /* Elite Chess: the front page, sign-in and cloud save.
    - Claude account: inside Claude the page knows who is viewing; progress syncs to the artifact database
      (each player's own private data/users/<id>/save document), so it follows you to any device.
-   - Email: profiles kept on this device (several people can share one phone or tablet), password-protected
-     with PBKDF2. Nothing is sent anywhere.
+   - Elite Chess account (elitechess.online and the Android app, when Firebase is set up in config.js): email and
+     password, or Google on the website; progress syncs to the player's own Firestore document (firebase.js).
+   - Email without Firebase: profiles kept on this device (several people can share one phone or tablet),
+     password-protected with PBKDF2. Nothing is sent anywhere. With Firebase they move into an account on sign-in.
    - Google: shown only where a Google client ID is configured (GW_CONFIG.googleClientId) and the page runs
-     on its own website; Google’s sign-in script cannot load inside Claude.
+     on its own website; Google’s sign-in script cannot load inside Claude or the Android app.
    - Guest: play straight away; you can attach the progress to an account later. */
 (() => {
 const GW = window.GW;
@@ -13094,6 +13286,7 @@ function switchTo(acct, {keepCurrent = false} = {}){
 }
 function signOut(){
   const was = current();
+  if (was && was.provider === 'firebase' && GW.FB) GW.FB.signOut();
   if (was) stash(was.id);
   restore(null);
   setCurrent(null);
@@ -13131,9 +13324,59 @@ async function pushCloud(force){
     GW.syncedAt = Date.now();
   } catch (_) { GW.syncError = true; }
 }
-GW.syncNow = () => pushCloud(true);
+/* ---------- Cloud save for Elite Chess accounts (Firebase) ---------- */
+const FB = GW.FB || {enabled:false};
+const fbAcct = u => ({id:'fb:' + u.uid, provider:'firebase', uid:u.uid, email:u.email || '', name:u.name || '', via:u.provider});
+const fbActive = () => { const a = current(), u = FB.enabled && FB.user(); return !!(u && a && a.provider === 'firebase' && a.uid === u.uid); };
+let fbSent = '', fbBusy = null;
+// Two-way sync with the account's copy: changes from another device are merged in (the newer profile wins; games,
+// puzzles and trophies from both are kept), then this device's progress goes up. first: signing in on this device.
+function fbSync(opts = {}){ if (!fbBusy) fbBusy = fbSyncRun(opts).finally(() => { fbBusy = null; }); return fbBusy; }
+async function fbSyncRun({first = false, force = false} = {}){
+  if (!fbActive() || !GW.progress) return;
+  const P = GW.progress, local = P.bundle(), sig = JSON.stringify(local.data);
+  if (!first && !force && sig === fbSent) return;
+  try {
+    const remote = await FB.getSave();
+    const lastT = +(localStorage.getItem('gw-sync-t') || 0);
+    let result = local;
+    if (remote && remote.data && remote.t > lastT){
+      const theirs = {mod: remote.t, data: remote.data};
+      let keep = P.amount(local) === 0 ? 'theirs' : P.amount(theirs) === 0 ? 'mine' : local.mod > remote.t ? 'mine' : 'theirs';
+      if (first && P.amount(local) > 0 && P.amount(theirs) > 0 && JSON.stringify(theirs.data) !== sig) keep = await askKeep(P.summary(theirs), P.summary(local), keep);
+      result = keep === 'mine' ? P.merge(local, theirs) : P.merge(theirs, local);
+      P.apply(result);
+    }
+    // the cloud copy is stamped with when its progress last changed (not when it was uploaded), so the newer play wins
+    let t = remote ? remote.t : 0;
+    if (!remote || JSON.stringify(result.data) !== JSON.stringify(remote.data)){
+      t = Math.max(result.mod || 0, remote ? remote.t + 1 : 0) || Date.now();
+      await FB.putSave(result.data, t);
+      try { localStorage.setItem('gw-mod', String(t)); } catch (_) {}
+    }
+    try { localStorage.setItem('gw-sync-t', String(t)); } catch (_) {}
+    fbSent = JSON.stringify(P.bundle().data);
+    GW.syncedAt = Date.now(); GW.syncError = false;
+  } catch (e){ GW.syncError = e.message || true; }
+}
+// Signing in on a device that already has progress: which profile should the account use?
+function askKeep(theirs, mine, fallback){
+  return new Promise(resolve => {
+    const card = (x, title, v) => `<button class="btn big-row" type="button" data-keep="${v}" style="white-space:normal"><span class="grow" style="text-align:left"><b>${esc(title)}</b><br><span class="muted small">${esc(x.name)} · rating ${x.rating} · ${x.games} games · ${x.puzzles} puzzles</span></span></button>`;
+    const m = GW.modal(`<h2>Progress found in your account</h2><div class="sub">This device has progress too. Whose profile and rating should your account use? Games, puzzles, achievements and trophies from both are kept.</div>
+      <div class="stack">${card(theirs, 'Your account', 'theirs')}${card(mine, 'This device', 'mine')}</div>`, {onClose: () => resolve(fallback)});
+    m.querySelectorAll('[data-keep]').forEach(b => b.addEventListener('click', () => { resolve(b.dataset.keep); GW.closeModal(); }));
+  });
+}
+GW.syncNow = () => fbActive() ? fbSync({force:true}) : pushCloud(true);
 setInterval(() => pushCloud(false), 25000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pushCloud(false); });
+// Elite Chess accounts save every 2 minutes while something changed (and when the app is closed or hidden), which
+// keeps a busy day well inside Firebase's free 20,000 writes
+setInterval(() => fbSync(), 120000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden'){ pushCloud(false); fbSync(); }
+  else fbSync({force:true});   // back in the app: pick up anything played on another device
+});
 
 // After signing in with Claude: bring down the cloud copy when it is newer than this device’s
 async function pullCloud(cloud, {ask}){
@@ -13167,6 +13410,8 @@ const FEATURES = [
   ['🎨', 'Make it yours', 'Dozens of boards and piece sets, seasonal and holiday themes, real sounds.']
 ];
 let demo = null;
+// Google's sign-in button needs a real website (not Claude, not the Android app's local page)
+const googleOK = () => !!CONFIG.googleClientId && !framed && !window.EliteApp && /^https?:$/.test(location.protocol);
 function landing({onDone} = {}){
   document.getElementById('landing')?.remove();
   const el = document.createElement('div');
@@ -13189,18 +13434,19 @@ function landing({onDone} = {}){
       <div class="stack" id="ldButtons">
         <div id="ldClaude"></div>
         <button class="btn big-row ld-btn" type="button" id="ldEmail"><span class="ld-ico">✉️</span><span class="grow">Continue with email</span></button>
-        ${CONFIG.googleClientId && !framed ? '<div id="ldGoogle" class="ld-google"></div>' : ''}
+        ${googleOK() ? '<div id="ldGoogle" class="ld-google"></div>' : ''}
         <button class="btn ghost" type="button" id="ldGuest">Play as a guest</button>
       </div>
       <form class="stack" id="ldForm" hidden autocomplete="on">
-        <div class="tabs small" id="ldMode"><button type="button" data-m="in" aria-pressed="true">Sign in</button><button type="button" data-m="up" aria-pressed="false">Create profile</button></div>
+        <div class="tabs small" id="ldMode"><button type="button" data-m="in" aria-pressed="true">Sign in</button><button type="button" data-m="up" aria-pressed="false">${FB.enabled ? 'Create account' : 'Create profile'}</button></div>
         <input class="search" id="ldName" maxlength="20" placeholder="Your name" autocomplete="nickname" hidden>
         <input class="search" id="ldMail" type="email" placeholder="Email" autocomplete="email" required>
         <input class="search" id="ldPass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password" minlength="6" required>
         <div class="feedback bad" id="ldErr" hidden></div>
         <button class="btn pop big" type="submit" id="ldGo">Sign in</button>
+        ${FB.enabled ? '<button class="btn ghost" type="button" id="ldForgot">Forgot your password?</button>' : ''}
         <button class="btn ghost" type="button" id="ldBack">← Other options</button>
-        <p class="muted small">Email profiles are saved on this device only, so several people can share one phone or tablet. To sync across devices, sign in with your Claude account.</p>
+        <p class="muted small">${FB.enabled ? 'Your Elite Chess account works on elitechess.online and in the Android app. Your progress is saved to your account, so it is safe if you change phones.' : 'Email profiles are saved on this device only, so several people can share one phone or tablet. To sync across devices, sign in with your Claude account.'}</p>
       </form>
       ${accts.length ? `<div class="ld-accts"><div class="label">On this device</div><div class="row">${accts.map(a => `<button class="chip-btn" type="button" data-acct="${esc(a.id)}">${esc(a.name || a.email)}</button>`).join('')}</div></div>` : ''}
     </section>
@@ -13238,19 +13484,21 @@ function landing({onDone} = {}){
     mode = m;
     el.querySelectorAll('#ldMode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
     el.querySelector('#ldName').hidden = m !== 'up';
-    el.querySelector('#ldGo').textContent = m === 'up' ? 'Create profile' : 'Sign in';
+    el.querySelector('#ldGo').textContent = m === 'up' ? (FB.enabled ? 'Create account' : 'Create profile') : 'Sign in';
+    const fg = el.querySelector('#ldForgot'); if (fg) fg.hidden = m === 'up';
     el.querySelector('#ldPass').autocomplete = m === 'up' ? 'new-password' : 'current-password';
     err.hidden = true;
   };
-  el.querySelector('#ldEmail').addEventListener('click', () => { buttons.hidden = true; form.hidden = false; setMode(acctStore().list.length ? 'in' : 'up'); el.querySelector(mode === 'up' ? '#ldName' : '#ldMail').focus(); });
+  el.querySelector('#ldEmail').addEventListener('click', () => { buttons.hidden = true; form.hidden = false; setMode(acctStore().list.length || FB.enabled ? 'in' : 'up'); el.querySelector(mode === 'up' ? '#ldName' : '#ldMail').focus(); });
   el.querySelector('#ldBack').addEventListener('click', () => { form.hidden = true; buttons.hidden = false; });
   el.querySelector('#ldMode').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (b) setMode(b.dataset.m); });
-  const fail = msg => { err.hidden = false; err.innerHTML = `<span class="ic">!</span><div>${esc(msg)}</div>`; };
+  const fail = msg => { err.hidden = false; err.className = 'feedback bad'; err.innerHTML = `<span class="ic">!</span><div>${esc(msg)}</div>`; };
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const email = el.querySelector('#ldMail').value.trim().toLowerCase(), pass = el.querySelector('#ldPass').value, name = el.querySelector('#ldName').value.trim().slice(0, 20);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Please enter a valid email address.');
     if (pass.length < 6) return fail('Passwords need at least 6 characters.');
+    if (FB.enabled) return fbSubmit(email, pass, name);
     if (!(window.crypto && crypto.subtle)) return fail('This browser can’t protect passwords here. Try playing as a guest.');
     const A = acctStore();
     let a = A.list.find(x => x.email === email);
@@ -13276,6 +13524,43 @@ function landing({onDone} = {}){
     }
     switchTo(pub);
   });
+  // Elite Chess accounts (Firebase)
+  async function fbSubmit(email, pass, name){
+    const go = el.querySelector('#ldGo');
+    go.disabled = true;
+    try {
+      let u, moved = false;
+      if (mode === 'up') u = await FB.signUp(email, pass, name);
+      else {
+        try { u = await FB.signIn(email, pass); }
+        catch (e){
+          // a profile made on this device before accounts existed moves into a new account with the same details
+          const A = acctStore(), old = A.list.find(x => x.email === email && x.provider === 'email');
+          if (!old || !['INVALID_LOGIN_CREDENTIALS', 'EMAIL_NOT_FOUND', 'INVALID_PASSWORD'].includes(e.code) || await hashPass(pass, old.salt) !== old.hash) throw e;
+          u = await FB.signUp(email, pass, old.name);
+          const saved = unstash(old.id);
+          if (saved && current() === null) restore(saved);
+          A.list = A.list.filter(x => x !== old); saveAccts(A);
+          moved = true;
+        }
+      }
+      if (mode === 'up' && name){ GW.profile.name = name; GW.saveProfile(); }
+      setCurrent(fbAcct(u));
+      if (moved){ location.reload(); return; }
+      // bring the account's progress down before the app opens (so a returning player isn't welcomed as new)
+      go.textContent = 'Loading your progress…';
+      await fbSync({first:true});
+      finish();
+      GW.toast(mode === 'up' ? `<b>Account created</b><br>Welcome${name ? ', ' + esc(name) : ''}! Your progress is saved to your account.` : '<b>Signed in</b><br>Your progress is saved to your account.');
+    } catch (e){ fail(e.message); }
+    finally { go.disabled = false; }
+  }
+  el.querySelector('#ldForgot')?.addEventListener('click', async () => {
+    const email = el.querySelector('#ldMail').value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Type your email above first, then tap “Forgot your password?”.');
+    try { await FB.resetPassword(email); err.hidden = false; err.className = 'feedback ok'; err.innerHTML = `<div>If there is an account for ${esc(email)}, an email to reset the password is on its way.</div>`; }
+    catch (e){ fail(e.code === 'EMAIL_NOT_FOUND' ? `If there is an account for ${email}, an email to reset the password is on its way.` : e.message); }
+  });
   el.querySelectorAll('[data-acct]').forEach(b => b.addEventListener('click', () => {
     const a = acctStore().list.find(x => x.id === b.dataset.acct);
     if (!a) return;
@@ -13283,7 +13568,19 @@ function landing({onDone} = {}){
     el.querySelector('#ldMail').value = a.email; el.querySelector('#ldPass').focus();
   }));
   // Google (only where configured and not inside Claude)
-  if (CONFIG.googleClientId && !framed) loadGoogle(el.querySelector('#ldGoogle'), cred => {
+  if (googleOK()) loadGoogle(el.querySelector('#ldGoogle'), async (cred, raw) => {
+    if (FB.enabled){
+      try {
+        const u = await FB.signInGoogle(raw);
+        u.name = cred.given_name || cred.name || '';
+        if (!GW.profile.name && u.name){ GW.profile.name = u.name.slice(0, 20); GW.saveProfile(); }
+        setCurrent(fbAcct(u));
+        await fbSync({first:true});
+        finish();
+        GW.toast('<b>Signed in with Google</b><br>Your progress is saved to your account.');
+      } catch (e){ buttons.hidden = false; GW.toast(esc(e.message)); }
+      return;
+    }
     const acct = {id:'google:' + cred.sub, provider:'google', email: cred.email || '', name: cred.given_name || cred.name || ''};
     if (!GW.profile.name && acct.name){ GW.profile.name = acct.name.slice(0, 20); GW.saveProfile(); }
     if (!current()){ setCurrent(acct); finish(); return; }
@@ -13300,7 +13597,7 @@ function loadGoogle(host, onCred){
   s.onload = () => {
     try {
       google.accounts.id.initialize({client_id: CONFIG.googleClientId, callback: r => {
-        try { const p = JSON.parse(decodeURIComponent(escape(atob(r.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))))); onCred(p); } catch (_) {}
+        try { const p = JSON.parse(decodeURIComponent(escape(atob(r.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))))); onCred(p, r.credential); } catch (_) {}
       }});
       google.accounts.id.renderButton(host, {theme:'outline', size:'large', width: 320, text:'continue_with'});
     } catch (_) { host.remove(); }
@@ -13326,22 +13623,37 @@ GW.needsLanding = () => !current();
 GW.accountCard = () => {
   const a = current();
   if (!a) return '';
-  const how = {claude:'Claude account · synced', email:'Email profile on this device', google:'Google account on this device', guest:'Guest on this device'}[a.provider] || '';
-  const sync = a.provider === 'claude' ? (GW.syncedAt ? `Last synced ${new Date(GW.syncedAt).toLocaleTimeString()}` : 'Syncs every few seconds while you play') : a.provider === 'guest' ? 'Sign in to keep your progress safe.' : 'Use a backup code (Settings) to move it to another device.';
+  const how = {claude:'Claude account · synced', firebase:'Elite Chess account · synced', email:'Email profile on this device', google:'Google account on this device', guest:'Guest on this device'}[a.provider] || '';
+  const sync = a.provider === 'firebase' ? (GW.syncError ? 'Couldn’t sync just now. It will try again.' : GW.syncedAt ? `Last synced ${new Date(GW.syncedAt).toLocaleTimeString()}` : 'Saves to your account while you play') : a.provider === 'claude' ? (GW.syncedAt ? `Last synced ${new Date(GW.syncedAt).toLocaleTimeString()}` : 'Syncs every few seconds while you play') : a.provider === 'guest' ? 'Sign in to keep your progress safe.' : 'Use a backup code (Settings) to move it to another device.';
   return `<div class="panel acct"><div class="row"><div class="grow"><div class="label">Account</div><b>${esc(a.name || a.email || (a.provider === 'guest' ? 'Guest' : 'Player'))}</b><div class="muted small">${esc(how)}${a.email ? ' · ' + esc(a.email) : ''}</div><div class="muted small">${esc(sync)}</div></div>
-    ${a.provider === 'claude' ? '<button class="btn" type="button" id="acSync">Sync now</button>' : ''}${a.provider === 'guest' ? '<button class="btn pop" type="button" id="acSignIn">Sign in</button>' : '<button class="btn ghost" type="button" id="acOut">Sign out</button>'}</div></div>`;
+    ${a.provider === 'claude' || a.provider === 'firebase' ? '<button class="btn" type="button" id="acSync">Sync now</button>' : ''}${a.provider === 'guest' ? '<button class="btn pop" type="button" id="acSignIn">Sign in</button>' : '<button class="btn ghost" type="button" id="acOut">Sign out</button>'}</div>
+    ${a.provider === 'firebase' ? '<button class="btn ghost" type="button" id="acDelete" style="margin-top:8px;color:var(--alarm)">Delete my account</button>' : ''}</div>`;
 };
 document.addEventListener('click', e => {
-  const t = e.target.closest('#acSync,#acSignIn,#acOut');
+  const t = e.target.closest('#acSync,#acSignIn,#acOut,#acDelete');
   if (!t) return;
-  if (t.id === 'acSync') GW.syncNow().then(() => GW.toast('Synced'));
+  if (t.id === 'acSync') GW.syncNow().then(() => GW.toast(GW.syncError ? esc(String(GW.syncError === true ? 'Couldn’t sync just now.' : GW.syncError)) : 'Synced'));
+  if (t.id === 'acDelete'){
+    const m = GW.modal(`<h2>Delete your account?</h2><div class="sub">Your Elite Chess account and the progress saved in it are deleted for good. This can’t be undone.</div><div class="feedback bad" id="delErr" hidden></div><div class="row"><button class="btn grow" id="delNo" type="button">Cancel</button><button class="btn danger grow" id="delYes" type="button">Delete account</button></div>`);
+    m.querySelector('#delNo').addEventListener('click', () => GW.closeModal());
+    m.querySelector('#delYes').addEventListener('click', async ev => {
+      ev.target.disabled = true;
+      try { await FB.deleteAccount(); }
+      catch (er){ const d = m.querySelector('#delErr'); d.hidden = false; d.textContent = er.message; ev.target.disabled = false; return; }
+      const was = current();
+      try { if (was) localStorage.removeItem('gw-stash:' + was.id); localStorage.removeItem('gw-sync-t'); } catch (_) {}
+      restore(null); setCurrent(null); location.reload();
+    });
+  }
   if (t.id === 'acSignIn'){ setCurrent(null); landing(); }
   if (t.id === 'acOut'){
-    const m = GW.modal(`<h2>Sign out?</h2><div class="sub">Your progress stays saved with your account${current()?.provider === 'claude' ? ' in the cloud' : ' on this device'}.</div><div class="row"><button class="btn grow" id="soNo" type="button">Cancel</button><button class="btn pop grow" id="soYes" type="button">Sign out</button></div>`);
+    const m = GW.modal(`<h2>Sign out?</h2><div class="sub">Your progress stays saved with your account${['claude', 'firebase'].includes(current()?.provider) ? ' in the cloud' : ' on this device'}.</div><div class="row"><button class="btn grow" id="soNo" type="button">Cancel</button><button class="btn pop grow" id="soYes" type="button">Sign out</button></div>`);
     m.querySelector('#soNo').addEventListener('click', () => GW.closeModal());
-    m.querySelector('#soYes').addEventListener('click', async () => { await pushCloud(true); signOut(); });
+    m.querySelector('#soYes').addEventListener('click', async () => { await pushCloud(true); await fbSync({force:true}); signOut(); });
   }
 });
+// Elite Chess account: sync when the app opens
+setTimeout(() => fbSync({force:true}), 0);
 // Keep a Claude account's cloud copy fresh when the app opens
 GW.cloudReady.then(cloud => { const a = current(); if (cloud && cloud.me && a && a.provider === 'claude') pullCloud(cloud, {ask: true}).then(p => { if (!p) pushCloud(false); }); });
 })();
@@ -14136,8 +14448,7 @@ function openSettings(){
     <div class="stack"><div class="label">Your progress</div>
       <div class="muted small">Progress is saved on this device. Copy a backup code to move it to a new phone or browser.</div>
       <div class="row"><button class="btn grow" id="stBackup" type="button">Copy backup code</button><button class="btn grow" id="stRestore" type="button">Restore from code</button></div>
-      ${window.EliteApp && window.EliteApp.info ? (() => { const a = appInfo() || {}; return `<div class="row" style="justify-content:space-between;gap:10px;font-weight:600"><span>App version ${esc(a.app || '')}<small class="muted" style="display:block;font-weight:500">${a.time ? 'Content from ' + new Date(a.time * 1000).toLocaleDateString() + ' · updates itself from elitechess.online' : 'Updates itself from elitechess.online'}</small></span><button class="btn" type="button" id="stUpd">Check for updates</button></div>`; })() : ''}
-      ${GW.openSync && GW.P2P && GW.P2P.supported() ? '<button class="btn violet big-row" id="stSync" type="button"><span class="grow" style="text-align:left">🔗 Linked devices: sync the Android app and elitechess.online</span><span>›</span></button>' : ''}</div>
+      ${window.EliteApp && window.EliteApp.info ? (() => { const a = appInfo() || {}; return `<div class="row" style="justify-content:space-between;gap:10px;font-weight:600"><span>App version ${esc(a.app || '')}<small class="muted" style="display:block;font-weight:500">${a.time ? 'Content from ' + new Date(a.time * 1000).toLocaleDateString() + ' · updates itself from elitechess.online' : 'Updates itself from elitechess.online'}</small></span><button class="btn" type="button" id="stUpd">Check for updates</button></div>`; })() : ''}</div>
     <div class="row"><button class="btn ghost" id="stReset" type="button">Reset all progress</button><span class="grow"></span>${GW.canExit() ? '<button class="btn" id="stExit" type="button">Exit app</button>' : ''}<button class="btn pop" id="stDone" type="button">Done</button></div>`, {wide:true});
   m.addEventListener('click', e => {
     const t = e.target.closest('.theme'), o = e.target.closest('[data-opt]'), lk = e.target.closest('[data-look]');
@@ -14148,7 +14459,6 @@ function openSettings(){
   m.querySelector('#stDone').addEventListener('click', () => GW.closeModal());
   m.querySelector('#stExit')?.addEventListener('click', () => { GW.closeModal(); GW.confirmExit(); });
   m.querySelector('#stLookBtn').addEventListener('click', () => { GW.closeModal(); GW.show('customize'); });
-  m.querySelector('#stSync')?.addEventListener('click', () => { GW.closeModal(); GW.openSync(); });
   m.querySelector('#stUpd')?.addEventListener('click', () => { try { window.EliteApp.checkUpdate(); } catch (_) {} });
   const KEYS = ['gw-profile', 'gw-settings', 'gw-setup', 'gw-archive', 'gw-fav'];
   m.querySelector('#stBackup').addEventListener('click', () => {
@@ -14180,6 +14490,7 @@ function openSettings(){
 
 /* ============================== ONBOARDING ============================== */
 function onboarding(){
+  if (profile.onboarded) return;   // e.g. a returning player whose account just loaded
   const levels = [['New to chess', 400], ['Beginner', 800], ['Intermediate', 1200], ['Advanced', 1600], ['Expert', 2000]];
   let lvl = 1;
   const looks = [D.PEOPLE.you.look, D.BOTS[2].look, D.BOTS[6].look, D.BOTS[10].look, D.BOTS[4].look, D.BOTS[13].look];
@@ -14895,9 +15206,6 @@ function joinCode(raw){
   start('joining', `Joining game ${code}…`, (token, inRoom) => inRoom ? roomJoinCode(code, token) : p2pJoinCode(code, token));
 }
 
-// the same direct connections carry progress between linked devices (sync.js)
-GW.P2P = {Peer, PREFIX, CODE_CHARS, randStr, dial, expect, supported: () => !framed && p2pSupported()};
-
 for (const ev of ['pagehide', 'beforeunload']) addEventListener(ev, () => { if (S.conn) S.conn.send({t:'bye'}); });
 
 GW.Online = {
@@ -14911,276 +15219,6 @@ GW.Online = {
   },
   supported: () => S.mode === 'room' || p2pSupported()
 };
-})();
-
-</script>
-<script>/* sync.js */
-/* Elite Chess: linked devices. The Android app and the website (or any two devices) pair once with a code, then
-   swap progress directly whenever both are open: the newer profile wins, and games, puzzles, achievements and
-   trophies from both are kept. No server stores anything; the PeerJS server only introduces the devices.
-   Inside Claude, progress syncs through the Claude account instead (auth.js). */
-(() => {
-const GW = window.GW, P2P = GW.P2P;
-if (!P2P) return;
-const {$, esc, store} = GW;
-const KEYS = ['gw-profile', 'gw-settings', 'gw-archive', 'gw-fav'];
-const MEDAL = {gold:3, silver:2, bronze:1};
-
-/* ---------- This device and the devices linked to it ---------- */
-function deviceName(){
-  if (window.EliteApp) return 'Android app';
-  const ua = navigator.userAgent;
-  const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iPhone' : /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'Mac' : 'computer';
-  return `Website on ${os}`;
-}
-const me = store.get('gw-dev', {id:'', name:''});
-if (!me.id){ me.id = P2P.randStr(12); me.name = deviceName(); store.set('gw-dev', me); }
-const links = () => store.get('gw-links', {list:[]}).list;
-const saveLinks = list => store.set('gw-links', {list});
-const devPeer = id => `${P2P.PREFIX}dev-${id}`;
-const mod = () => +(localStorage.getItem('gw-mod') || 0);
-
-/* ---------- Progress as a bundle, merged from two devices ---------- */
-function bundle(){
-  const d = {};
-  for (const k of KEYS){ try { const v = localStorage.getItem(k); if (v) d[k] = JSON.parse(v); } catch (_) {} }
-  return {mod: mod(), data: d};
-}
-const amount = b => { const p = (b.data && b.data['gw-profile']) || {}; return (p.games || 0) + (p.solved || []).length + Math.round((p.xp || 0) / 10); };
-const summary = b => { const p = (b.data && b.data['gw-profile']) || {}; return {name: p.name || 'Player', rating: p.rating || 800, games: p.games || 0, puzzles: (p.solved || []).length, mod: b.mod}; };
-// The winner's profile and settings, plus everything collected on either device
-function merge(win, lose){
-  const w = win.data || {}, l = lose.data || {}, out = {};
-  const wp = w['gw-profile'], lp = l['gw-profile'];
-  if (wp || lp){
-    const p = Object.assign({}, lp || {}, wp || {});
-    if (wp && lp){
-      for (const k of ['solved', 'achievements']) p[k] = [...new Set([...(lp[k] || []), ...(wp[k] || [])])];
-      p.lessons = Object.assign({}, lp.lessons || {}, wp.lessons || {});
-      p.trophies = Object.assign({}, lp.trophies || {}, wp.trophies || {});
-      for (const [c, m] of Object.entries(lp.trophies || {})) if ((MEDAL[m] || 0) > (MEDAL[p.trophies[c]] || 0)) p.trophies[c] = m;
-      for (const k of ['best', 'rushBest', 'bestStreak']) p[k] = Math.max(+wp[k] || 0, +lp[k] || 0);
-    }
-    out['gw-profile'] = p;
-  }
-  if (w['gw-settings'] || l['gw-settings']) out['gw-settings'] = w['gw-settings'] || l['gw-settings'];
-  const games = new Map();
-  for (const g of [...(l['gw-archive'] || []), ...(w['gw-archive'] || [])]) if (g && g.moves) games.set(g.t + ':' + g.moves.join(''), g);
-  if (games.size) out['gw-archive'] = [...games.values()].sort((a, b) => b.t - a.t).slice(0, 80);
-  const fav = [...new Set([...((l['gw-fav'] || {}).ids || []), ...((w['gw-fav'] || {}).ids || [])])];
-  if (fav.length) out['gw-fav'] = {ids: fav};
-  return {mod: Math.max(win.mod || 0, lose.mod || 0), data: out};
-}
-// The avatar is drawn into SVG, so only plain colours, words, numbers and flags are accepted from another device
-function cleanProfile(p){
-  if (!p || typeof p !== 'object') return p;
-  const look = {};
-  for (const [k, v] of Object.entries(p.look || {})){
-    if (!/^[a-z]{1,12}$/i.test(k)) continue;
-    if (typeof v === 'boolean' || (typeof v === 'number' && isFinite(v)) || (typeof v === 'string' && /^#?[a-z0-9-]{1,20}$/i.test(v))) look[k] = v;
-  }
-  return Object.assign({}, p, {look, country: /^[A-Z]{2}$/.test(p.country || '') ? p.country : '', name: String(p.name || '').slice(0, 20)});
-}
-// Put a merged bundle on this device, updating the running app without a reload
-function apply(b){
-  if (b.data['gw-profile']) b.data['gw-profile'] = cleanProfile(b.data['gw-profile']);
-  const cur = bundle();
-  if (JSON.stringify(cur.data) === JSON.stringify(b.data)){ localStorage.setItem('gw-mod', String(b.mod)); return false; }
-  for (const k of KEYS){ try { if (b.data[k]) localStorage.setItem(k, JSON.stringify(b.data[k])); } catch (_) {} }
-  if (b.data['gw-profile']){ for (const k of Object.keys(GW.profile)) delete GW.profile[k]; Object.assign(GW.profile, b.data['gw-profile']); }
-  if (b.data['gw-settings']){ Object.assign(GW.settings, b.data['gw-settings']); GW.applySettings(); }
-  try { localStorage.setItem('gw-mod', String(b.mod)); } catch (_) {}
-  if (GW.renderRailMe) GW.renderRailMe();
-  if (['home', 'profile', 'history'].includes(GW.currentScreen())) GW.show(GW.currentScreen());
-  return true;
-}
-function noteSync(dev){
-  const list = links().filter(x => x.id !== dev.id);
-  list.unshift({id: dev.id, name: String(dev.name || 'Device').slice(0, 40), last: Date.now()});
-  saveLinks(list.slice(0, 8));
-  renderPanel();
-}
-const cleanDev = d => d && /^[a-z0-9]{6,20}$/.test(d.id) ? {id: d.id, name: String(d.name || 'Device').replace(/[\u0000-\u001f<>]/g, '').slice(0, 40)} : null;
-
-/* ---------- The conversation between two devices ----------
-   caller → {t:'hello', dev, link}; answerer → {t:'state', dev, b}; the caller merges and sends {t:'apply', b}. */
-function answer(conn, {linking = false, onDone} = {}){
-  conn.on('data', d => {
-    if (d.t === 'hello'){
-      const dev = cleanDev(d.dev);
-      // only linked devices may sync, unless this connection came in through a link code
-      if (!dev || (!linking && !links().some(x => x.id === dev.id))){ conn.send({t:'refused'}); return; }
-      conn.dev = dev;
-      conn.send({t:'state', dev:{id: me.id, name: me.name}, b: bundle()});
-    } else if (d.t === 'apply' && conn.dev && d.b && d.b.data){
-      const changed = apply(d.b);
-      noteSync(conn.dev);
-      if (changed) GW.toast(`<b>Synced</b><br>Progress updated from ${esc(conn.dev.name)}.`);
-      conn.send({t:'done'});
-      if (onDone) onDone(conn.dev);
-      setTimeout(() => conn.close(true), 1500);
-    }
-  });
-}
-// choose(theirs, mine) → 'mine' | 'theirs' | null (ask the player when linking for the first time)
-async function call(conn, {link = false, choose = null} = {}){
-  const got = P2P.expect(conn, ['state', 'refused'], 8000);
-  conn.send({t:'hello', dev:{id: me.id, name: me.name}, link});
-  const d = await got;
-  if (!d || d.t !== 'state' || !d.b) return {ok:false, why: d && d.t === 'refused' ? 'refused' : 'timeout'};
-  const dev = cleanDev(d.dev);
-  if (!dev) return {ok:false, why:'bad'};
-  const mine = bundle(), theirs = d.b;
-  let keep;
-  if (choose) keep = await choose(summary(theirs), summary(mine), dev);
-  else keep = amount(mine) === 0 ? 'theirs' : amount(theirs) === 0 ? 'mine' : (theirs.mod || 0) > mine.mod ? 'theirs' : 'mine';
-  if (!keep) return {ok:false, why:'cancelled'};
-  const merged = keep === 'mine' ? merge(mine, theirs) : merge(theirs, mine);
-  const done = P2P.expect(conn, ['done'], 8000);
-  conn.send({t:'apply', b: merged});
-  const changed = apply(merged);
-  await done;
-  noteSync(dev);
-  return {ok:true, dev, changed};
-}
-
-/* ---------- Always listening while the app is open (when linked) ---------- */
-const S = {peer:null, busy:false, again:null, timer:null, status:{}};
-async function listen(){
-  if (S.peer || !links().length || !P2P.supported()) return;
-  const peer = new P2P.Peer(devPeer(me.id));
-  try { await peer.open(); } catch (_) { return; }   // e.g. the website open in two tabs: the first one listens
-  S.peer = peer;
-  peer.on('connection', c => c.on('open', () => answer(c)));
-  peer.on('close', () => { if (S.peer === peer){ S.peer = null; setTimeout(listen, 5000); } });
-}
-// Reach out to every linked device that is open right now
-async function syncAll(manual = false){
-  if (!P2P.supported() || !links().length) return;
-  // a sync asked for while another runs goes next, so a change made meanwhile isn't missed
-  if (S.busy){ S.again = S.again === 'timer' || !S.again ? manual || 'auto' : S.again; return; }
-  await listen();
-  if (!S.peer) return;
-  S.busy = true; renderPanel();
-  for (const dev of links()){
-    // on the regular timer only one of the two devices calls; opening the app or asking always calls
-    if (manual === 'timer' && dev.id < me.id) continue;
-    S.status[dev.id] = 'checking'; renderPanel();
-    const c = await P2P.dial(S.peer, devPeer(dev.id), 9000);
-    if (!c){ S.status[dev.id] = 'offline'; renderPanel(); continue; }
-    const r = await call(c).catch(() => ({ok:false}));
-    c.close(true);
-    S.status[dev.id] = r.ok ? 'synced' : 'offline';
-    if (r.ok && r.changed) GW.toast(`<b>Synced</b><br>Progress updated from ${esc(dev.name)}.`);
-  }
-  S.busy = false; renderPanel();
-  if (S.again){ const m = S.again; S.again = null; syncAll(m); }
-}
-GW.syncDevices = () => syncAll(true);
-function schedule(){
-  if (!links().length || !P2P.supported()) return;
-  listen();
-  setTimeout(() => syncAll(), 4000);
-  clearInterval(S.timer);
-  S.timer = setInterval(() => { if (document.visibilityState === 'visible') syncAll('timer'); }, 120000);
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && links().length) setTimeout(() => syncAll(), 1500); });
-
-/* ---------- Linking with a code ---------- */
-const L = {peer:null, code:''};
-function stopHosting(){ if (L.peer){ L.peer.destroy(); L.peer = null; } L.code = ''; }
-async function hostLink(){
-  stopHosting();
-  for (let i = 0; i < 4 && !L.peer; i++){
-    const code = P2P.randStr(6, P2P.CODE_CHARS), peer = new P2P.Peer(`${P2P.PREFIX}link-${code}`);
-    try { await peer.open(); } catch (e){ if (e.taken) continue; throw e; }
-    L.peer = peer; L.code = code;
-    peer.on('connection', c => c.on('open', () => answer(c, {linking:true, onDone: dev => {
-      stopHosting(); schedule(); renderPanel();
-      GW.toast(`<b>Linked</b><br>This device now syncs with ${esc(dev.name)}.`);
-    }})));
-  }
-  if (!L.peer) throw new Error('no code');
-}
-async function joinLink(code){
-  const peer = new P2P.Peer(`${P2P.PREFIX}p-${P2P.randStr(10)}`);
-  await peer.open();
-  try {
-    const c = await P2P.dial(peer, `${P2P.PREFIX}link-${code}`, 10000);
-    if (!c) return {ok:false, why:'nocode'};
-    const r = await call(c, {link:true, choose: askWhich});
-    c.close(true);
-    return r;
-  } finally { setTimeout(() => peer.destroy(), 2000); }
-}
-// First link: which progress should both devices keep? (games, puzzles and trophies from both are kept either way)
-function askWhich(theirs, mine, dev){
-  return new Promise(resolve => {
-    const ago = t => t ? new Date(t).toLocaleString() : 'not yet';
-    const card = (s, title, v) => `<button class="btn big-row sync-pick" type="button" data-keep="${v}"><span class="grow" style="text-align:left"><b>${esc(title)}</b><br><span class="muted small">${esc(s.name)} · rating ${s.rating} · ${s.games} games · ${s.puzzles} puzzles<br>Last change: ${esc(ago(s.mod))}</span></span></button>`;
-    const rec = amount({data:{'gw-profile':{games:theirs.games, solved:Array(theirs.puzzles), xp:0}}}) > amount({data:{'gw-profile':{games:mine.games, solved:Array(mine.puzzles), xp:0}}}) ? 'theirs' : 'mine';
-    const m = GW.modal(`<h2>Link with ${esc(dev.name)}</h2><div class="sub">Whose profile and rating should both devices use? Games, solved puzzles, achievements and trophies from both are kept either way.</div>
-      <div class="stack">${rec === 'mine' ? card(mine, 'This device (' + me.name + ')', 'mine') + card(theirs, dev.name, 'theirs') : card(theirs, dev.name, 'theirs') + card(mine, 'This device (' + me.name + ')', 'mine')}
-      <button class="btn ghost" type="button" id="syCancel">Cancel</button></div>`, {onClose: () => resolve(null)});
-    m.querySelectorAll('[data-keep]').forEach(b => b.addEventListener('click', () => { resolve(b.dataset.keep); GW.closeModal(); }));
-    m.querySelector('#syCancel').addEventListener('click', () => { GW.closeModal(); resolve(null); });
-  });
-}
-
-/* ---------- The "Linked devices" window (from Settings) ---------- */
-let panel = null;
-function renderPanel(){
-  if (!panel || !document.body.contains(panel)) { panel = null; return; }
-  const list = links();
-  const st = id => ({checking:'Checking…', offline:'Not open right now', synced:'Synced just now'})[S.status[id]] || '';
-  panel.querySelector('#syList').innerHTML = list.length ? list.map(d => `<div class="sync-dev"><span class="sync-ico">${/Android app/.test(d.name) ? '📱' : '🌐'}</span><div class="grow"><b>${esc(d.name)}</b><div class="muted small">${st(d.id) || (d.last ? 'Last synced ' + new Date(d.last).toLocaleString() : '')}</div></div><button class="btn ghost" type="button" data-unlink="${d.id}">Unlink</button></div>`).join('')
-    : '<div class="muted small">No devices linked yet.</div>';
-  panel.querySelector('#sySync').hidden = !list.length;
-  panel.querySelector('#sySync').disabled = S.busy;
-  panel.querySelector('#sySync').textContent = S.busy ? 'Syncing…' : 'Sync now';
-  panel.querySelector('#syCode').innerHTML = L.code ? `<div class="label">Enter this code on your other device</div><div class="sync-code">${L.code}</div><div class="muted small">Waiting for your other device… Keep this window open.</div>` : '';
-}
-function openPanel(){
-  if (!P2P.supported()){ GW.toast('Linking devices works in the Android app and on elitechess.online.'); return; }
-  panel = GW.modal(`<h2>Linked devices</h2><div class="sub">Link the Android app and elitechess.online (or any two devices) to keep the same progress on both. They sync whenever both are open.</div>
-    <div class="muted small">This device: <b>${esc(me.name)}</b></div>
-    <div class="stack" id="syList"></div>
-    <button class="btn pop" type="button" id="sySync">Sync now</button>
-    <div class="stack"><div class="label">Link a new device</div>
-      <button class="btn" type="button" id="syHost">Show a code on this device</button>
-      <div class="row"><input class="search grow" id="syIn" maxlength="6" placeholder="Or enter a code" autocapitalize="characters" autocomplete="off"><button class="btn violet" type="button" id="syJoin">Link</button></div>
-      <div id="syCode"></div><div class="feedback bad" id="syErr" hidden></div></div>
-    <div class="row"><span class="grow"></span><button class="btn pop" type="button" id="syDone">Done</button></div>`, {onClose: stopHosting});
-  const err = t => { const e = panel.querySelector('#syErr'); e.hidden = !t; e.textContent = t || ''; };
-  panel.querySelector('#syDone').addEventListener('click', () => { stopHosting(); GW.closeModal(); });
-  panel.querySelector('#sySync').addEventListener('click', () => syncAll(true));
-  panel.querySelector('#syHost').addEventListener('click', async e => {
-    err(''); e.target.disabled = true;
-    try { await hostLink(); } catch (_) { err('Couldn’t reach the link service. Check your internet connection.'); }
-    e.target.disabled = false; renderPanel();
-  });
-  panel.querySelector('#syJoin').addEventListener('click', async e => {
-    const code = panel.querySelector('#syIn').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (code.length !== 6) return err('Codes have 6 letters and numbers.');
-    err(''); e.target.disabled = true; e.target.textContent = 'Linking…';
-    const keepPanel = panel;
-    const r = await joinLink(code).catch(() => ({ok:false, why:'net'}));
-    if (!r.ok && r.why === 'cancelled') return;
-    if (r.ok){ schedule(); GW.toast(`<b>Linked</b><br>This device now syncs with ${esc(r.dev.name)}.`); if (document.body.contains(keepPanel)) renderPanel(); else openPanel(); return; }
-    if (!document.body.contains(keepPanel)) openPanel();
-    err(r.why === 'nocode' ? `No device is showing the code ${code}. Check it, and keep the other device’s window open.` : 'Couldn’t link. Check your internet connection and try again.');
-  });
-  panel.addEventListener('click', e => {
-    const b = e.target.closest('[data-unlink]');
-    if (!b) return;
-    saveLinks(links().filter(x => x.id !== b.dataset.unlink));
-    if (!links().length && S.peer){ S.peer.destroy(); S.peer = null; }
-    renderPanel();
-  });
-  renderPanel();
-}
-GW.openSync = openPanel;
-schedule();
 })();
 
 </script>
