@@ -1,0 +1,7 @@
+{
+  "firestore": {"rules": "firestore.rules"},
+  "hosting": {
+    "public": "firebase-hosting",
+    "headers": [{"source": "**", "headers": [{"key": "Cache-Control", "value": "no-cache"}]}]
+  }
+}

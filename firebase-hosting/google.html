@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- © 2026 Elite Chess. All rights reserved. -->
+<!-- Elite Chess: "Continue with Google". Served from the Firebase project's own address (elite-chess-d8a76.firebaseapp.com),
+     which Google already trusts, so the website needs no extra Google settings. elitechess.online sends the player here
+     with #back=<page>; this page signs in with Google through Firebase and returns to that page with #gsi=<Google ID token>,
+     which auth.js turns into the player's Elite Chess account. Deployed with Firebase Hosting (firebase.json). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Elite Chess · Continue with Google</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;background:#14161c;color:#e9ecf2}
+  main{text-align:center;padding:24px}
+  .spin{width:34px;height:34px;margin:0 auto 14px;border:3px solid #3a3f4b;border-top-color:#8fb3ff;border-radius:50%;animation:s 1s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  a{color:#8fb3ff}
+</style>
+</head>
+<body>
+<main><div class="spin"></div><p id="msg">Opening Google…</p></main>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script>
+(() => {
+  // Only ever hand the token back to the Elite Chess website
+  const OK = /^(https:\/\/(www\.)?elitechess\.online|http:\/\/localhost(:\d+)?)\/[^#]*$/;
+  const KEY = 'gw-gsi-back';
+  const msg = t => { document.getElementById('msg').textContent = t; };
+  const fromHash = new URLSearchParams(location.hash.slice(1)).get('back');
+  if (fromHash && OK.test(fromHash)) sessionStorage.setItem(KEY, fromHash);
+  const back = sessionStorage.getItem(KEY) || 'https://elitechess.online/';
+  const leave = frag => { sessionStorage.removeItem(KEY); location.replace(back + '#' + frag); };
+
+  firebase.initializeApp({apiKey: 'AIzaSyCdQHxnSoHl1RE0OaHpwpCXRXjH_mla4pU', authDomain: 'elite-chess-d8a76.firebaseapp.com', projectId: 'elite-chess-d8a76'});
+  const auth = firebase.auth();
+  auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).then(() => auth.getRedirectResult()).then(res => {
+    const cred = res && res.credential;
+    if (cred && cred.idToken){
+      msg('Signed in. Going back to Elite Chess…');
+      return auth.signOut().then(() => leave('gsi=' + encodeURIComponent(cred.idToken)));
+    }
+    if (fromHash){
+      // Fresh visit from the website: off to Google
+      const p = new firebase.auth.GoogleAuthProvider();
+      p.setCustomParameters({prompt: 'select_account'});
+      return auth.signInWithRedirect(p);
+    }
+    leave('gsierr=1');
+  }).catch(() => {
+    msg('Google sign-in didn’t finish. Going back…');
+    setTimeout(() => leave('gsierr=1'), 1200);
+  });
+})();
+</script>
+</body>
+</html>
