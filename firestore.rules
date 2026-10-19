@@ -9,6 +9,15 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['v', 't', 'name', 'data'])
         && request.resource.data.data is string && request.resource.data.data.size() < 900000;
     }
+    // Google sign-in hand-off for the Android app (firebase-hosting/google.html → auth.js): the token is encrypted with a key
+    // only the app knows, and the 128-bit document id is the secret, so only get and delete by id are allowed, never list.
+    match /gsiHandoff/{code} {
+      allow get, delete: if code.matches('[0-9a-f]{32}');
+      allow create: if code.matches('[0-9a-f]{32}')
+        && request.resource.data.keys().hasOnly(['c', 'iv'])
+        && request.resource.data.c is string && request.resource.data.c.size() < 8000
+        && request.resource.data.iv is string && request.resource.data.iv.size() < 40;
+    }
     match /{document=**} {
       allow read, write: if false;
     }

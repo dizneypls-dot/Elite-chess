@@ -3,7 +3,9 @@
 <!-- Elite Chess: "Continue with Google". Served from the Firebase project's own address (elite-chess-d8a76.firebaseapp.com),
      which Google already trusts, so the website needs no extra Google settings. elitechess.online sends the player here
      with #back=<page>; this page signs in with Google through Firebase and returns to that page with #gsi=<Google ID token>,
-     which auth.js turns into the player's Elite Chess account. Deployed with Firebase Hosting (firebase.json). -->
+     which auth.js turns into the player's Elite Chess account. Deployed with Firebase Hosting (firebase.json).
+     The Android app can't be returned to by URL, so it sends #app=<code>.<key> instead: the token is encrypted with that
+     key (AES-GCM) and left at Firestore gsiHandoff/<code>, which the app picks up and deletes when the player comes back. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -28,10 +30,35 @@
   const OK = /^(https:\/\/(www\.)?elitechess\.online|http:\/\/localhost(:\d+)?)\/[^#]*$/;
   const KEY = 'gw-gsi-back';
   const msg = t => { document.getElementById('msg').textContent = t; };
-  const fromHash = new URLSearchParams(location.hash.slice(1)).get('back');
+  const APP = 'gw-gsi-app';
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const fromHash = hash.get('back');
   if (fromHash && OK.test(fromHash)) sessionStorage.setItem(KEY, fromHash);
+  const fromApp = /^[0-9a-f]{32}\.[A-Za-z0-9_-]{43}$/.test(hash.get('app') || '') ? hash.get('app') : null;
+  if (fromApp) { sessionStorage.setItem(APP, fromApp); sessionStorage.removeItem(KEY); }
+  const app = sessionStorage.getItem(APP);
   const back = sessionStorage.getItem(KEY) || 'https://elitechess.online/';
-  const leave = frag => { sessionStorage.removeItem(KEY); location.replace(back + '#' + frag); };
+  const leave = frag => {
+    sessionStorage.removeItem(KEY); sessionStorage.removeItem(APP);
+    if (!app) return location.replace(back + '#' + frag);
+    if (frag.startsWith('gsi=')) return toApp(decodeURIComponent(frag.slice(4)));
+    msg('Google sign-in didn’t finish. Go back to the Elite Chess app and try again.');
+  };
+  const b64 = u8 => btoa(String.fromCharCode(...u8)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const unb64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  async function toApp(token){
+    const [code, key] = app.split('.');
+    const k = await crypto.subtle.importKey('raw', unb64(key), 'AES-GCM', false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const c = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv}, k, new TextEncoder().encode(token)));
+    const r = await fetch('https://firestore.googleapis.com/v1/projects/elite-chess-d8a76/databases/(default)/documents/gsiHandoff?documentId=' + code + '&key=AIzaSyCdQHxnSoHl1RE0OaHpwpCXRXjH_mla4pU', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({fields: {c: {stringValue: b64(c)}, iv: {stringValue: b64(iv)}}})
+    });
+    if (!r.ok) throw new Error('handoff ' + r.status);
+    document.querySelector('.spin').remove();
+    msg('Signed in with Google. Go back to the Elite Chess app to carry on.');
+  }
 
   firebase.initializeApp({apiKey: 'AIzaSyCdQHxnSoHl1RE0OaHpwpCXRXjH_mla4pU', authDomain: 'elite-chess-d8a76.firebaseapp.com', projectId: 'elite-chess-d8a76'});
   const auth = firebase.auth();
@@ -41,8 +68,8 @@
       msg('Signed in. Going back to Elite Chess…');
       return auth.signOut().then(() => leave('gsi=' + encodeURIComponent(cred.idToken)));
     }
-    if (fromHash){
-      // Fresh visit from the website: off to Google
+    if (fromHash || fromApp){
+      // Fresh visit from the website or the app: off to Google
       const p = new firebase.auth.GoogleAuthProvider();
       p.setCustomParameters({prompt: 'select_account'});
       return auth.signInWithRedirect(p);
