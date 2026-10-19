@@ -3,7 +3,7 @@
 **Play:** https://elitechess.online/
 On iPhone open it in Safari → Share → Add to Home Screen; on Android use Chrome → Install app, or get the APK below.
 
-- **Android app:** [EliteChess.apk](https://elitechess.online/EliteChess.apk)
+- **Android app:** [EliteChess.apk](https://elitechess.online/EliteChess.apk) (3.1 is signed with a new key: uninstall an older Elite Chess app first; source in `android/`)
 - **Single-file copy** that works offline from a phone's files: [Elite-Chess.html](https://elitechess.online/Elite-Chess.html)
 
 ## Legal
