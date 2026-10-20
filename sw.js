@@ -1,5 +1,5 @@
 // Offline cache for the installed (Add to Home Screen) web app. Built by tools/site.py.
-const VERSION = 'gw-e6e8894bf1';
+const VERSION = 'gw-f7a823d59b';
 const FILES = ['./', 'index.html', 'config.js', 'legal-docs.js', 'mark.js', 'chess.js', 'data.js', 'pieces.js', 'staunton.js', 'seasonal.js', 'flyovers.js', 'holidayart.js', 'themes.js', 'sportart.js', 'sportthemes.js', 'sounds.js', 'world-data.js', 'repertoire.js', 'puzzles.js', 'puzzles-extra.js', 'openings.js', 'lessons.js', 'core.js', 'play.js', 'world.js', 'customize.js', 'firebase.js', 'sync.js', 'auth.js', 'learn.js', 'online.js', 'social.js', 'sports.js', 'licences.js', 'legal.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'stockfish.js', 'stockfish.wasm', 'stockfish.wasm.js', 'sf17-lite.js', 'sf17-lite.wasm'];
 self.addEventListener('install', e => e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(
